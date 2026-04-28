@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Campus Waste Heatmap — EcoScan VIT</title>
+<meta name="description" content="Live waste heatmap for VIT Vellore campus — food, e-waste, and miscellaneous zones."/>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@700;800&display=swap" rel="stylesheet"/>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<!-- Leaflet.heat — smooth kernel-density heatmap layer -->
+<script src="https://unpkg.com/leaflet.heat@0.2.0/dist/leaflet-heat.js"></script>
+<script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+<style>
+:root{
+  --bg:#0e1512;
+  --nav-bg:rgba(20,27,24,.55);
+  --surf:rgba(255,255,255,.06);
+  --bdr:rgba(255,255,255,.1);
+  --txt:#e8ece6;
+  --muted:#8a9882;
+  --g1:#6b9e78;
+  --g2:#4a7c6f;
+  --cyan:#00d4ff;
+  --red:#ff4455;
+  --orange:#ff9500;
+  --cyan-bg:rgba(0,212,255,.12);
+  --red-bg:rgba(255,68,85,.12);
+  --orange-bg:rgba(255,149,0,.12);
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);overflow:hidden}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:1000;
+  padding:14px 32px;
+  display:flex;align-items:center;gap:16px;
+  background:rgba(20,27,24,.55);
+  backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--g1),var(--g2));border-radius:11px;display:grid;place-items:center;color:#fff;flex-shrink:0}
+.nav-icon i{width:20px;height:20px}
+.nav-brand{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:800;color:var(--txt)}
+.nav-links{display:flex;gap:24px;margin-left:auto;align-items:center}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--txt)}
+.nav-links a.act{color:var(--txt);font-weight:700}
+.nav-user{display:flex;align-items:center;gap:10px;margin-left:16px}
+.nav-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--g1);background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0}
+.nav-uname{font-size:.82rem;font-weight:600;color:var(--txt);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-signout{background:none;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 11px;color:var(--muted);font-size:.78rem;cursor:pointer;transition:all .2s;font-family:'Inter',sans-serif}
+.nav-signout:hover{border-color:var(--g1);color:var(--g1)}
+
+/* ── MAP ── */
+#map{position:absolute;inset:0;top:67px;z-index:1}
+
+/* ── SIDE PANEL ── */
+.side-panel{
+  position:fixed;top:82px;left:18px;z-index:900;
+  width:264px;
+  background:rgba(14,21,18,.82);
+  border:1px solid rgba(255,255,255,.1);
+  border-radius:20px;
+  padding:18px;
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  box-shadow:0 8px 40px rgba(0,0,0,.5);
+  transition:transform .35s cubic-bezier(.4,0,.2,1);
+}
+.side-panel.hidden{transform:translateX(-300px)}
+.panel-title{
+  font-family:'Space Grotesk',sans-serif;font-size:.95rem;font-weight:800;
+  color:var(--txt);margin-bottom:14px;
+  display:flex;align-items:center;justify-content:space-between
+}
+.panel-toggle-btn{
+  background:rgba(255,255,255,.07);border:none;cursor:pointer;color:var(--muted);
+  font-size:.75rem;padding:3px 9px;border-radius:8px;transition:background .15s;font-family:'Inter',sans-serif
+}
+.panel-toggle-btn:hover{background:rgba(255,255,255,.12);color:var(--txt)}
+
+/* FILTER CHIPS */
+.filter-chips{display:flex;gap:7px;flex-wrap:wrap;margin-bottom:14px}
+.chip{
+  padding:5px 13px;border-radius:50px;font-size:.75rem;font-weight:700;
+  cursor:pointer;border:1.5px solid transparent;
+  transition:all .2s;letter-spacing:.2px;
+}
+.chip.all{background:rgba(107,158,120,.18);color:var(--g1);border-color:rgba(107,158,120,.3)}
+.chip.all.active,
+.chip.all:hover{background:var(--g1);color:#fff;border-color:var(--g1)}
+.chip.food{background:rgba(255,68,85,.12);color:var(--red);border-color:rgba(255,68,85,.25)}
+.chip.food.active,
+.chip.food:hover{background:var(--red);color:#fff;border-color:var(--red)}
+.chip.ewaste{background:rgba(0,212,255,.1);color:var(--cyan);border-color:rgba(0,212,255,.2)}
+.chip.ewaste.active,
+.chip.ewaste:hover{background:var(--cyan);color:#000;border-color:var(--cyan)}
+.chip.misc{background:rgba(255,149,0,.1);color:var(--orange);border-color:rgba(255,149,0,.2)}
+.chip.misc.active,
+.chip.misc:hover{background:var(--orange);color:#fff;border-color:var(--orange)}
+
+/* STAT CARDS */
+.stat-card{
+  background:rgba(255,255,255,.05);
+  border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:12px 14px;margin-bottom:9px;
+  position:relative;overflow:hidden
+}
+.stat-card:last-child{margin-bottom:0}
+.stat-card::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;border-radius:3px 0 0 3px}
+.stat-card.food::before{background:var(--red)}
+.stat-card.ewaste::before{background:var(--cyan)}
+.stat-card.misc::before{background:var(--orange)}
+.sc-head{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+.sc-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.sc-dot.food{background:var(--red)}
+.sc-dot.ewaste{background:var(--cyan)}
+.sc-dot.misc{background:var(--orange)}
+.sc-label{font-size:.8rem;font-weight:700;color:var(--txt)}
+.sc-count{margin-left:auto;font-family:'Space Grotesk',sans-serif;font-size:1.25rem;font-weight:800}
+.sc-count.food{color:var(--red)}
+.sc-count.ewaste{color:var(--cyan)}
+.sc-count.misc{color:var(--orange)}
+.sc-sub{font-size:.7rem;color:var(--muted);line-height:1.4}
+.sc-co2{font-size:.7rem;font-weight:600;margin-top:4px}
+.sc-co2.food{color:var(--red)}
+.sc-co2.ewaste{color:var(--cyan)}
+.sc-co2.misc{color:var(--orange)}
+
+/* ── GRADIENT LEGEND BAR ── */
+.legend{
+  position:fixed;bottom:22px;left:50%;transform:translateX(-50%);z-index:900;
+  background:rgba(14,21,18,.82);border:1px solid rgba(255,255,255,.1);border-radius:50px;
+  padding:10px 22px;
+  display:flex;gap:14px;align-items:center;
+  backdrop-filter:blur(24px);-webkit-backdrop-filter:blur(24px);
+  box-shadow:0 4px 30px rgba(0,0,0,.4);
+}
+.leg-gradient{
+  width:120px;height:10px;border-radius:10px;
+  background:linear-gradient(to right,#0000ff66,#00ff0099,#ffff00cc,#ff8800ee,#ff0000);
+}
+.leg-label{font-size:.72rem;font-weight:600;color:var(--muted)}
+
+/* ── HOVER TOOLTIP ── */
+#hoverTooltip{
+  position:fixed;
+  z-index:9999;
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(6px);
+  transition:opacity .18s ease, transform .18s ease;
+  min-width:220px;
+  max-width:270px;
+}
+#hoverTooltip.visible{
+  opacity:1;
+  transform:translateY(0);
+}
+.ht-inner{
+  background:rgba(10,16,13,.88);
+  border:1px solid rgba(255,255,255,.13);
+  border-radius:16px;
+  padding:14px 16px;
+  backdrop-filter:blur(28px);-webkit-backdrop-filter:blur(28px);
+  box-shadow:0 16px 48px rgba(0,0,0,.65);
+}
+.ht-title{font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:.92rem;color:#fff;margin-bottom:5px}
+.ht-badge{font-size:.63rem;font-weight:700;padding:2px 9px;border-radius:20px;display:inline-block;margin-bottom:8px;letter-spacing:.3px;text-transform:uppercase}
+.ht-badge.food{background:var(--red-bg);color:var(--red);border:1px solid rgba(255,68,85,.25)}
+.ht-badge.ewaste{background:var(--cyan-bg);color:var(--cyan);border:1px solid rgba(0,212,255,.25)}
+.ht-badge.misc{background:var(--orange-bg);color:var(--orange);border:1px solid rgba(255,149,0,.25)}
+.ht-desc{font-size:.73rem;color:var(--muted);margin-bottom:7px;line-height:1.5}
+.ht-row{display:flex;align-items:center;gap:7px;font-size:.73rem}
+.ht-row span{color:var(--muted)}
+.ht-row strong{color:#e8ece6;font-weight:600}
+.ht-intensity{
+  margin-top:8px;
+  height:4px;
+  border-radius:4px;
+  background:rgba(255,255,255,.1);
+  overflow:hidden;
+}
+.ht-intensity-bar{
+  height:100%;
+  border-radius:4px;
+  transition:width .3s ease;
+}
+
+/* Leaflet controls */
+.leaflet-control-attribution{display:none!important}
+.leaflet-bar{border:1px solid rgba(255,255,255,.12)!important;border-radius:10px!important;overflow:hidden!important}
+.leaflet-bar a{
+  background:rgba(14,21,18,.88)!important;
+  color:var(--txt)!important;
+  border-color:rgba(255,255,255,.08)!important;
+  backdrop-filter:blur(12px)!important;
+  font-family:'Space Grotesk',sans-serif!important;
+  font-size:1.1rem!important;
+}
+.leaflet-bar a:hover{background:rgba(255,255,255,.1)!important}
+
+/* DOT marker */
+@keyframes markerPop{
+  0%{transform:scale(0);opacity:0}
+  70%{transform:scale(1.2);opacity:1}
+  100%{transform:scale(1);opacity:1}
+}
+@keyframes pulse{
+  0%,100%{transform:scale(1);opacity:.4}
+  50%{transform:scale(2.2);opacity:0}
+}
+</style>
+</head>
+<body>
+
+<div id="hoverTooltip">
+  <div class="ht-inner">
+    <div class="ht-title"></div>
+    <div class="ht-badge"></div>
+    <div class="ht-desc"></div>
+    <div class="ht-row"><span>CO₂ output:</span><strong class="ht-co2"></strong></div>
+    <div class="ht-row"><span>Zone level:</span><strong class="ht-pct"></strong></div>
+    <div class="ht-intensity"><div class="ht-intensity-bar"></div></div>
+  </div>
+</div>
+
+<nav>
+  <a class="nav-logo" href="index.html">
+    <div class="nav-icon"><i data-lucide="leaf"></i></div>
+    <span class="nav-brand">EcoScan VIT</span>
+  </a>
+  <div class="nav-links">
+    <a href="index.html">Home</a>
+    <a href="dashboard.html">Dashboard</a>
+    <a href="ecoscan.html">Scanner</a>
+    <a href="heatmap.html" class="act">Heatmap</a>
+  </div>
+  <div class="nav-user">
+    <div class="nav-avatar" id="userInitial">?</div>
+    <div class="nav-uname" id="userName">Loading...</div>
+    <button class="nav-signout" id="logoutBtn">Sign out</button>
+  </div>
+</nav>
+
+<div id="map"></div>
+
+<!-- SIDE PANEL -->
+<div class="side-panel" id="sidePanel">
+  <div class="panel-title">
+    Waste Zones
+    <button class="panel-toggle-btn" onclick="document.getElementById('sidePanel').classList.toggle('hidden')">Hide</button>
+  </div>
+
+  <!-- Filter chips -->
+  <div class="filter-chips">
+    <div class="chip all active" id="chipAll"  onclick="setFilter('all')">All</div>
+    <div class="chip food"       id="chipFood" onclick="setFilter('food')">Food</div>
+    <div class="chip ewaste"     id="chipEw"   onclick="setFilter('ewaste')">E-Waste</div>
+    <div class="chip misc"       id="chipMisc" onclick="setFilter('misc')">Misc</div>
+  </div>
+
+  <div class="stat-card food">
+    <div class="sc-head">
+      <div class="sc-dot food"></div>
+      <span class="sc-label">Food Waste</span>
+      <span class="sc-count food" id="cntFood">10</span>
+    </div>
+    <div class="sc-sub">Canteens, messes &amp; food outlets</div>
+    <div class="sc-co2 food" id="co2Food">~198 kg CO&#x2082;e / month</div>
+  </div>
+
+  <div class="stat-card ewaste">
+    <div class="sc-head">
+      <div class="sc-dot ewaste"></div>
+      <span class="sc-label">E-Waste</span>
+      <span class="sc-count ewaste" id="cntEwaste">5</span>
+    </div>
+    <div class="sc-sub">Electronics, servers &amp; lab equipment</div>
+    <div class="sc-co2 ewaste" id="co2Ewaste">~112 kg CO&#x2082;e / month</div>
+  </div>
+
+  <div class="stat-card misc">
+    <div class="sc-head">
+      <div class="sc-dot misc"></div>
+      <span class="sc-label">Miscellaneous Waste</span>
+      <span class="sc-count misc" id="cntMisc">2</span>
+    </div>
+    <div class="sc-sub">Medical, sports &amp; general campus waste</div>
+    <div class="sc-co2 misc" id="co2Misc">~34 kg CO&#x2082;e / month</div>
+  </div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <span class="leg-label">Low</span>
+  <div class="leg-gradient"></div>
+  <span class="leg-label">High</span>
+</div>
+
+<script>
+// ── VIT Campus — hard-locked bounds ──
+const VIT_CENTER = [12.9700, 79.1565];
+const VIT_BOUNDS = L.latLngBounds([12.9640, 79.1490], [12.9760, 79.1650]);
+
+const map = L.map('map', {
+  center: VIT_CENTER,
+  zoom: 16,
+  minZoom: 15,
+  maxZoom: 18,
+  maxBounds: VIT_BOUNDS,
+  maxBoundsViscosity: 1.0,
+  zoomControl: false,
+  attributionControl: false,
+});
+
+// ESRI World Imagery — satellite view, free, no API key ✓
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19,
+  attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DigitalGlobe, GeoEye, Earthstar Geographics',
+}).addTo(map);
+
+L.control.zoom({ position: 'bottomright' }).addTo(map);
+
+// ── Zone Data (lat, lng, intensity 0-1, type, meta) ──
+const ZONES = [
+  // FOOD WASTE
+  { lat:12.9680, lng:79.1612, intensity:0.85, type:'food',   label:'PRP Canteen',       desc:'Pearl Research Park daily food surplus & packaging',  co2:18.5 },
+  { lat:12.9710, lng:79.1548, intensity:0.95, type:'food',   label:'Q Block Mess',      desc:'Hostel mess — organic & cooked food waste',           co2:22.0 },
+  { lat:12.9705, lng:79.1525, intensity:0.90, type:'food',   label:'One Food World',    desc:'Restaurant chain — packaged & fresh food disposal',   co2:19.8 },
+  { lat:12.9698, lng:79.1556, intensity:0.70, type:'food',   label:'Just Bake',         desc:'Bakery & café — daily baked goods surplus',           co2:11.2 },
+  { lat:12.9700, lng:79.1568, intensity:1.00, type:'food',   label:'Food Mall',         desc:'Campus food court — multi-outlet organic waste hub',  co2:28.4 },
+  { lat:12.9722, lng:79.1552, intensity:0.92, type:'food',   label:'T Block Mess',      desc:'Hostel mess — bulk cooked food & tray waste',         co2:23.5 },
+  { lat:12.9692, lng:79.1540, intensity:0.65, type:'food',   label:'Darling Cafe',      desc:'Café — beverages & light meal packaging waste',       co2:9.8  },
+  { lat:12.9715, lng:79.1561, intensity:0.55, type:'food',   label:'Nescafe',           desc:'Coffee kiosk — cups, capsules & beverage waste',     co2:6.4  },
+  { lat:12.9688, lng:79.1574, intensity:0.75, type:'food',   label:'KC Foods',          desc:'Street-style canteen — plate & organic waste',       co2:14.7 },
+  { lat:12.9726, lng:79.1557, intensity:0.93, type:'food',   label:'S Block Mess',      desc:'Hostel mess — student canteen bulk food waste',      co2:24.3 },
+  // E-WASTE
+  { lat:12.9718, lng:79.1572, intensity:0.88, type:'ewaste', label:'Technology Tower',     desc:'Electronics lab scrap — PCBs, test gear & cables',   co2:28.6 },
+  { lat:12.9680, lng:79.1608, intensity:0.80, type:'ewaste', label:'Pearl Research Park',  desc:'R&D prototype hardware & server component disposal',  co2:22.4 },
+  { lat:12.9703, lng:79.1559, intensity:0.72, type:'ewaste', label:'Silver Jubilee Tower', desc:'Administrative IT equipment & peripheral e-waste',    co2:18.9 },
+  { lat:12.9695, lng:79.1576, intensity:0.85, type:'ewaste', label:'Main Building',        desc:'Central IT infrastructure & legacy hardware scrap',   co2:25.3 },
+  { lat:12.9712, lng:79.1543, intensity:0.70, type:'ewaste', label:'SMV Block',            desc:'Smart manufacturing lab — CNC & robotics e-waste',    co2:17.1 },
+  // MISCELLANEOUS
+  { lat:12.9685, lng:79.1554, intensity:0.78, type:'misc',   label:'Health Centre',         desc:'Medical waste — consumables, PPE & clinical surplus', co2:16.8 },
+  { lat:12.9732, lng:79.1571, intensity:0.80, type:'misc',   label:'Indoor Sports Complex', desc:'Sports waste — packaging, equipment & litter',        co2:17.4 },
+];
+
+const COLORS = { food:'#ff4455', ewaste:'#00d4ff', misc:'#ff9500' };
+const LABELS  = { food:'Food Waste', ewaste:'E-Waste', misc:'Miscellaneous Waste' };
+
+// ── Build heat point arrays per type ──
+// Each point: [lat, lng, intensity]
+// We also add extra synthetic "spread" points around each zone for a smoother blob
+function spreadPoints(z) {
+  const offsets = [
+    [0,0],
+    [0.00015,0],[0,0.00015],[-0.00015,0],[0,-0.00015],
+    [0.0003,0.0002],[-0.0002,0.0003],
+  ];
+  return offsets.map(([dy,dx]) => [z.lat+dy, z.lng+dx, z.intensity * (dy===0&&dx===0?1:0.55)]);
+}
+
+const heatPoints = {
+  food:   [],
+  ewaste: [],
+  misc:   [],
+  all:    [],
+};
+
+ZONES.forEach(z => {
+  spreadPoints(z).forEach(p => {
+    heatPoints[z.type].push(p);
+    heatPoints.all.push(p);
+  });
+});
+
+// ── Heatmap gradient configs per category ──
+const HEAT_OPTS = {
+  food: {
+    radius: 55, blur: 45, maxZoom: 18,
+    gradient: { 0.2:'#ffff0011', 0.4:'#ffdd00cc', 0.6:'#ff9900ee', 0.8:'#ff4400ff', 1.0:'#ff0000' }
+  },
+  ewaste: {
+    radius: 50, blur: 40, maxZoom: 18,
+    gradient: { 0.2:'#00ffff11', 0.4:'#00ddffcc', 0.65:'#0088ffee', 0.85:'#0033ff', 1.0:'#0000cc' }
+  },
+  misc: {
+    radius: 50, blur: 40, maxZoom: 18,
+    gradient: { 0.2:'#ffff0011', 0.4:'#ffee00cc', 0.6:'#ff9900ee', 0.85:'#ff6600', 1.0:'#dd4400' }
+  },
+  all: {
+    radius: 52, blur: 42, maxZoom: 18,
+    gradient: { 0.0:'blue', 0.3:'#00ff00aa', 0.55:'yellow', 0.75:'orange', 1.0:'red' }
+  },
+};
+
+// Create heat layers
+const heatLayers = {};
+['food','ewaste','misc','all'].forEach(t => {
+  const opts = HEAT_OPTS[t];
+  heatLayers[t] = L.heatLayer(heatPoints[t], opts);
+});
+
+// ── Floating tooltip ──
+const tooltip = document.getElementById('hoverTooltip');
+const LABELS_FULL = { food:'Food Waste', ewaste:'E-Waste', misc:'Miscellaneous Waste' };
+
+document.addEventListener('mousemove', e => {
+  const pad = 16;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const tw = tooltip.offsetWidth  || 240;
+  const th = tooltip.offsetHeight || 130;
+  if (x + tw > window.innerWidth)  x = e.clientX - tw - pad;
+  if (y + th > window.innerHeight) y = e.clientY - th - pad;
+  tooltip.style.left = x + 'px';
+  tooltip.style.top  = y + 'px';
+});
+
+function showTooltip(z) {
+  const bar = tooltip.querySelector('.ht-intensity-bar');
+  const color = COLORS[z.type];
+  bar.style.width = (z.intensity * 100) + '%';
+  bar.style.background = `linear-gradient(to right, ${color}88, ${color})`;
+  tooltip.querySelector('.ht-title').textContent     = z.label;
+  tooltip.querySelector('.ht-badge').textContent     = LABELS_FULL[z.type];
+  tooltip.querySelector('.ht-badge').className       = 'ht-badge ' + z.type;
+  tooltip.querySelector('.ht-desc').textContent      = z.desc;
+  tooltip.querySelector('.ht-co2').textContent       = z.co2 + ' kg CO₂e / month';
+  tooltip.querySelector('.ht-pct').textContent       = Math.round(z.intensity * 100) + '% intensity';
+  tooltip.classList.add('visible');
+}
+function hideTooltip() { tooltip.classList.remove('visible'); }
+
+// ── Invisible hover zones (transparent circles that capture mouse events) ──
+const hoverCirclesByType = { food:[], ewaste:[], misc:[] };
+const hoverGroup = L.layerGroup().addTo(map);
+
+ZONES.forEach(z => {
+  const radius = 55 + z.intensity * 80;   // bigger blob = bigger hover area
+  const circle = L.circle([z.lat, z.lng], {
+    radius,
+    color: 'transparent',
+    fillColor: 'transparent',
+    fillOpacity: 0.001,   // near-zero but truthy — enables mouse events
+    weight: 0,
+    interactive: true,
+  });
+  circle.on('mouseover', () => showTooltip(z));
+  circle.on('mouseout',  hideTooltip);
+  hoverCirclesByType[z.type].push(circle);
+  hoverGroup.addLayer(circle);
+});
+
+// Active filter state
+let activeFilter = 'all';
+heatLayers['all'].addTo(map);
+
+function setFilter(type) {
+  ['food','ewaste','misc','all'].forEach(t => map.removeLayer(heatLayers[t]));
+
+  // Show/hide hover circles
+  hoverGroup.clearLayers();
+  const types = type === 'all' ? ['food','ewaste','misc'] : [type];
+  types.forEach(t => hoverCirclesByType[t].forEach(c => hoverGroup.addLayer(c)));
+
+  heatLayers[type].addTo(map);
+  activeFilter = type;
+
+  ['chipAll','chipFood','chipEw','chipMisc'].forEach(id => document.getElementById(id).classList.remove('active'));
+  const chipMap = {all:'chipAll', food:'chipFood', ewaste:'chipEw', misc:'chipMisc'};
+  document.getElementById(chipMap[type]).classList.add('active');
+}
+</script>
+
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+
+onAuthStateChanged(auth, user => {
+  if (!user) { window.location.href = 'login.html'; return; }
+  const initials = (user.displayName || user.email).slice(0,2).toUpperCase();
+  const avatarEl = document.getElementById('userInitial');
+  if (user.photoURL) {
+    avatarEl.innerHTML = `<img src="${user.photoURL}" alt="${initials}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+  } else {
+    avatarEl.textContent = initials;
+  }
+  document.getElementById('userName').textContent    = user.displayName || user.email.split('@')[0];
+  document.getElementById('logoutBtn').onclick       = () => signOut(auth).then(() => location.href = 'login.html');
+});
+</script>
+<script>lucide.createIcons();</script>
+</body>
+</html>

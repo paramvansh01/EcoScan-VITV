@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>EcoScan VIT — Campus CO2 Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/lucide@latest"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#141b18;--surf:rgba(255,255,255,.05);--surf2:rgba(255,255,255,.08);--bdr:rgba(255,255,255,.1);--txt:#e2e8e5;--muted:#879991;--g1:#6b9e78;--g2:#4a7c6f;--g3:#8b7355;--warn:#c9a96e;--err:#c47060}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--txt);min-height:100vh}
+.orbs{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.orb{position:absolute;border-radius:50%;filter:blur(120px);opacity:.1;animation:drift 22s ease-in-out infinite alternate}
+.orb:nth-child(1){width:600px;height:600px;background:#6b9e78;top:-200px;left:-100px}
+.orb:nth-child(2){width:500px;height:500px;background:#8b7355;bottom:-100px;right:-100px;animation-duration:18s}
+@keyframes drift{from{transform:translate(0,0)}to{transform:translate(60px,80px)}}
+.app{position:relative;z-index:1;max-width:1200px;margin:0 auto;padding:100px 18px 60px}
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;padding:14px 32px;display:flex;align-items:center;gap:16px;background:rgba(20,27,24,.55);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,.08)}
+.nav-logo{display:flex;align-items:center;gap:10px;text-decoration:none}
+.nav-icon{width:38px;height:38px;background:linear-gradient(135deg,var(--g1),var(--g2));border-radius:11px;display:grid;place-items:center;font-size:18px;color:#fff;flex-shrink:0}
+.nav-icon i{width:20px;height:20px}
+.nav-brand{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:800;color:var(--txt)}
+.nav-links{display:flex;gap:24px;margin-left:auto;align-items:center}
+.nav-links a{color:var(--muted);text-decoration:none;font-size:.88rem;font-weight:500;transition:color .2s}
+.nav-links a:hover{color:var(--txt)}
+.nav-links a.act{color:var(--txt);font-weight:700}
+.nav-user{display:flex;align-items:center;gap:10px;margin-left:16px}
+.nav-avatar{width:34px;height:34px;border-radius:50%;border:2px solid var(--g1);background:linear-gradient(135deg,var(--g1),var(--g2));display:grid;place-items:center;font-size:.72rem;font-weight:700;color:#fff;flex-shrink:0;overflow:hidden;background-size:cover;background-position:center}
+.nav-uname{font-size:.82rem;font-weight:600;color:var(--txt);max-width:130px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.nav-signout{background:none;border:1px solid rgba(255,255,255,.2);border-radius:8px;padding:5px 11px;color:var(--muted);font-size:.78rem;cursor:pointer;transition:all .2s}
+.nav-signout:hover{border-color:var(--g1);color:var(--g1)}
+
+/* KPI CARDS */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:16px;margin-bottom:26px}
+.kpi{background:var(--surf);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bdr);border-radius:18px;padding:18px;position:relative;overflow:hidden;transition:transform .2s;box-shadow:0 4px 20px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08)}
+.kpi:hover{transform:translateY(-3px)}
+.kpi::after{content:'';position:absolute;inset:0;background:linear-gradient(135deg,var(--g1),var(--g2));opacity:.03;pointer-events:none}
+.kpi-ico{color:var(--g1);margin-bottom:7px}
+.kpi-ico i{width:24px;height:24px}
+.kpi-val{font-family:'Space Grotesk',sans-serif;font-size:2rem;font-weight:800;line-height:1;background:linear-gradient(135deg,var(--g1),var(--g2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}
+.kpi-lbl{color:var(--muted);font-size:.75rem;margin-top:5px}
+.kpi-delta{font-size:.72rem;color:var(--g1);margin-top:3px}
+
+/* GRID LAYOUT */
+.dash-grid{display:grid;grid-template-columns:1fr 1fr;gap:20px;margin-bottom:22px}
+@media(max-width:780px){.dash-grid{grid-template-columns:1fr}}
+.panel{background:var(--surf);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--bdr);border-radius:20px;padding:20px;box-shadow:0 4px 20px rgba(0,0,0,.3);border:1px solid rgba(255,255,255,.08)}
+.panel-head{font-family:'Space Grotesk',sans-serif;font-size:1rem;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.panel-head i{width:18px;height:18px;color:var(--g1)}
+.panel-head::after{content:'';flex:1;height:1px;background:var(--bdr)}
+
+/* DEPT BARS */
+.dept-row{display:flex;align-items:center;gap:10px;margin-bottom:11px}
+.dept-name{font-size:.82rem;width:110px;flex-shrink:0}
+.dept-bar-bg{flex:1;background:rgba(255,255,255,.06);border-radius:5px;height:10px;overflow:hidden}
+.dept-bar{height:100%;border-radius:5px;background:linear-gradient(90deg,var(--g1),var(--g2));width:0;transition:width 1.2s cubic-bezier(.4,0,.2,1)}
+.dept-co2{font-size:.78rem;color:var(--muted);width:70px;text-align:right;flex-shrink:0}
+
+/* CATEGORY DONUT */
+.donut-wrap{display:flex;align-items:center;gap:20px;margin-top:4px}
+#donutSvg{flex-shrink:0}
+.legend{display:flex;flex-direction:column;gap:7px;flex:1}
+.leg-row{display:flex;align-items:center;gap:7px;font-size:.78rem}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+.leg-lbl{flex:1}
+.leg-pct{color:var(--muted);font-size:.72rem}
+
+/* RECENT SCANS TABLE */
+.scan-table{width:100%;border-collapse:collapse;font-size:.8rem}
+.scan-table th{color:var(--muted);font-weight:500;padding:6px 8px;text-align:left;border-bottom:1px solid var(--bdr)}
+.scan-table td{padding:9px 8px;border-bottom:1px solid rgba(255,255,255,.05);vertical-align:middle}
+.scan-table tr:last-child td{border-bottom:none}
+.grade{width:24px;height:24px;border-radius:6px;display:inline-grid;place-items:center;font-size:.7rem;font-weight:800;margin-right:4px}
+.gA{background:rgba(107,158,120,.2);color:#6b9e78}.gB{background:rgba(74,124,111,.2);color:#4a7c6f}
+.gC{background:rgba(201,169,110,.2);color:#c9a96e}.gD{background:rgba(196,112,96,.2);color:#c47060}
+
+/* LEADERBOARD */
+.lb-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05)}
+.lb-row:last-child{border-bottom:none}
+.lb-rank{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:800;width:28px;text-align:center;color:var(--muted)}
+.lb-rank.top{color:var(--g1)}
+.lb-name{flex:1;font-size:.85rem;font-weight:600}
+.lb-dept{font-size:.72rem;color:var(--muted)}
+.lb-co2{font-family:'Space Grotesk',sans-serif;font-size:.9rem;font-weight:700;color:var(--g2)}
+
+/* MY SCANS */
+.my-scan-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;transition:background .2s;border-radius:8px;padding-left:8px}
+.my-scan-row:hover{background:rgba(255,255,255,.04)}
+.my-scan-row:last-child{border-bottom:none}
+.scan-ico{width:32px;height:32px;border-radius:8px;background:rgba(107,158,120,.1);display:grid;place-items:center;flex-shrink:0;color:var(--g1)}
+.scan-ico i{width:16px;height:16px}
+.scan-name{flex:1;font-size:.83rem;font-weight:600;line-height:1.3}
+.scan-cat{font-size:.7rem;color:var(--muted)}
+.scan-co2{font-family:'Space Grotesk',sans-serif;font-size:.88rem;font-weight:700}
+.scan-time{font-size:.68rem;color:var(--muted)}
+
+/* TOTAL METER */
+.meter-wrap{text-align:center;padding:10px 0}
+.meter-co2{font-family:'Space Grotesk',sans-serif;font-size:3.5rem;font-weight:800;background:linear-gradient(135deg,var(--g1),var(--g2));-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;line-height:1}
+.meter-lbl{color:var(--muted);font-size:.85rem;margin-top:5px}
+.equiv{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;justify-content:center}
+.eq-card{background:rgba(255,255,255,.04);border:1px solid var(--bdr);border-radius:12px;padding:10px 14px;text-align:center;min-width:110px}
+.eq-val{font-family:'Space Grotesk',sans-serif;font-size:1.1rem;font-weight:700;color:var(--g1)}
+.eq-lbl{font-size:.68rem;color:var(--muted);margin-top:2px}
+
+/* TREND */
+.trend-bars{display:flex;align-items:flex-end;gap:6px;height:90px;margin-top:8px}
+.t-bar-wrap{flex:1;display:flex;flex-direction:column;align-items:center;gap:4px}
+.t-bar{width:100%;border-radius:4px 4px 0 0;background:linear-gradient(180deg,var(--g1),var(--g2));min-height:4px;transition:height 1s ease}
+.t-lbl{font-size:.65rem;color:var(--muted);white-space:nowrap}
+
+.empty-state{text-align:center;color:var(--muted);padding:30px;font-size:.85rem}
+.empty-state .ico{margin-bottom:8px;opacity:.4;color:var(--g1)}
+.empty-state .ico i{width:40px;height:40px}
+
+.badge-vit{background:rgba(107,158,120,.15);border:1px solid rgba(107,158,120,.3);border-radius:8px;padding:4px 10px;font-size:.72rem;color:var(--g1);display:inline-flex;align-items:center;gap:5px}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(107,158,120,.3);border-top-color:var(--g1);border-radius:50%;animation:sp .7s linear infinite}
+@keyframes sp{to{transform:rotate(360deg)}}
+
+@supports not (backdrop-filter: blur(14px)) {
+  .kpi,.panel,.user-chip{background:rgba(20,27,24,.92)}
+}
+</style>
+</head>
+<body>
+<div class="orbs"><div class="orb"></div><div class="orb"></div></div>
+<div class="app">
+  <nav>
+    <a class="nav-logo" href="index.html">
+      <div class="nav-icon"><i data-lucide="leaf"></i></div>
+      <span class="nav-brand">EcoScan VIT</span>
+    </a>
+    <div class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="dashboard.html" class="act">Dashboard</a>
+      <a href="ecoscan.html">Scanner</a>
+      <a href="heatmap.html">Heatmap</a>
+    </div>
+    <div class="nav-user" id="navUser">
+      <div class="nav-avatar" id="userInitial">?</div>
+      <div class="nav-uname" id="userName">Loading...</div>
+      <button class="nav-signout" id="logoutBtn">Sign out</button>
+    </div>
+  </nav>
+
+  <!-- KPIs -->
+  <div class="kpi-grid">
+    <div class="kpi"><div class="kpi-ico"><i data-lucide="users"></i></div><div class="kpi-val" id="kStudents"><span class="spinner"></span></div><div class="kpi-lbl">VIT Students Participating</div></div>
+    <div class="kpi"><div class="kpi-ico"><i data-lucide="bar-chart-3"></i></div><div class="kpi-val" id="kScans"><span class="spinner"></span></div><div class="kpi-lbl">Total Products Scanned</div></div>
+    <div class="kpi"><div class="kpi-ico"><i data-lucide="globe"></i></div><div class="kpi-val" id="kCO2"><span class="spinner"></span></div><div class="kpi-lbl">kg CO2e Tracked on Campus</div></div>
+    <div class="kpi"><div class="kpi-ico"><i data-lucide="star"></i></div><div class="kpi-val" id="kAvg"><span class="spinner"></span></div><div class="kpi-lbl">Avg CO2 per Student (kg)</div></div>
+  </div>
+
+  <!-- CAMPUS TOTAL + TREND -->
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-head"><i data-lucide="globe"></i> VIT Vellore Campus Total</div>
+      <div class="meter-wrap">
+        <div class="meter-co2" id="totalCO2">—</div>
+        <div class="meter-lbl">kg CO2e from all scanned products</div>
+        <div class="equiv" id="equivCards"></div>
+      </div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><i data-lucide="trending-up"></i> Daily Scans (Last 7 Days)</div>
+      <div class="trend-bars" id="trendBars"></div>
+    </div>
+  </div>
+
+  <!-- DEPT + CATEGORY -->
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-head"><i data-lucide="landmark"></i> CO2 by Department</div>
+      <div id="deptBars"><div class="empty-state"><div class="ico"><i data-lucide="bar-chart-3"></i></div>Loading...</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><i data-lucide="package"></i> Top Product Categories</div>
+      <div class="donut-wrap">
+        <svg id="donutSvg" width="120" height="120" viewBox="0 0 120 120"></svg>
+        <div class="legend" id="catLegend"><div class="empty-state" style="padding:10px">Loading...</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- LEADERBOARD + RECENT SCANS -->
+  <div class="dash-grid">
+    <div class="panel">
+      <div class="panel-head"><i data-lucide="trophy"></i> Eco-Conscious Leaderboard</div>
+      <div style="font-size:.74rem;color:var(--muted);margin-bottom:10px">Students who tracked the most products</div>
+      <div id="leaderboard"><div class="empty-state"><div class="ico"><i data-lucide="trophy"></i></div>Loading leaderboard...</div></div>
+    </div>
+    <div class="panel">
+      <div class="panel-head"><i data-lucide="clock"></i> My Scan History</div>
+      <div id="myScans"><div class="empty-state"><div class="ico"><i data-lucide="camera"></i></div><p>No scans yet — go scan some products!</p></div></div>
+      <div style="margin-top:12px;text-align:center"><a href="ecoscan.html" style="background:linear-gradient(135deg,var(--g1),var(--g2));color:#fff;font-weight:700;font-size:.82rem;padding:10px 20px;border-radius:10px;text-decoration:none;display:inline-block">Scan a Product</a></div>
+    </div>
+  </div>
+
+  <!-- RECENT CAMPUS SCANS -->
+  <div class="panel" style="margin-bottom:22px">
+    <div class="panel-head"><i data-lucide="radio"></i> Live Campus Scans</div>
+    <table class="scan-table">
+      <thead><tr><th>Product</th><th>Category</th><th>CO2e</th><th>Grade</th><th>Student</th><th>Time</th></tr></thead>
+      <tbody id="liveScans"><tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">Loading live feed...</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<script src="firebase-config.js"></script>
+<script type="module">
+import { initializeApp }    from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js';
+import { getAuth, onAuthStateChanged, signOut } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js';
+import { getFirestore, doc, getDoc, collection, query, orderBy, limit, onSnapshot, where, getDocs } from 'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js';
+
+const app  = initializeApp(FIREBASE_CONFIG);
+const auth = getAuth(app);
+const db   = getFirestore(app);
+
+let currentUser = null;
+
+onAuthStateChanged(auth, async user => {
+  if (!user) { window.location.href='login.html'; return; }
+  currentUser = user;
+  const initials = (user.displayName||user.email).slice(0,2).toUpperCase();
+  const avatarEl = document.getElementById('userInitial');
+  if (user.photoURL) {
+    avatarEl.innerHTML = `<img src="${user.photoURL}" alt="${initials}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;display:block;">`;
+    avatarEl.textContent = '';
+  } else {
+    avatarEl.textContent = initials;
+  }
+  document.getElementById('userName').textContent = user.displayName || user.email.split('@')[0];
+  document.getElementById('logoutBtn').onclick = () => signOut(auth).then(()=>window.location.href='login.html');
+  loadDashboard();
+  loadMyScans(user.uid);
+});
+
+async function loadDashboard() {
+  // Campus stats
+  const snap = await getDoc(doc(db,'stats','vit_vellore'));
+  if (snap.exists()) {
+    const d = snap.data();
+    const total = d.totalCO2||0;
+    document.getElementById('kStudents').textContent = (d.studentCount||0).toLocaleString();
+    document.getElementById('kScans').textContent    = (d.totalScans||0).toLocaleString();
+    document.getElementById('kCO2').textContent      = total.toFixed(0);
+    document.getElementById('kAvg').textContent      = d.studentCount ? (total/d.studentCount).toFixed(1) : '—';
+    document.getElementById('totalCO2').textContent  = total.toFixed(1);
+    renderEquiv(total);
+    renderDepts(d.deptBreakdown||{});
+    renderCategories(d.catBreakdown||{});
+    renderTrend(d.dailyTrend||[]);
+  } else {
+    ['kStudents','kScans','kCO2','kAvg'].forEach(id => document.getElementById(id).textContent='0');
+    document.getElementById('totalCO2').textContent='0';
+  }
+
+  // Live scans feed
+  const q = query(collection(db,'scans'), orderBy('timestamp','desc'), limit(20));
+  onSnapshot(q, snap => {
+    const rows = snap.docs.map(d => {
+      const s = d.data();
+      return `<tr>
+        <td style="font-weight:600">${s.productName||'Unknown'}</td>
+        <td style="color:var(--muted)">${(s.category||'generic').replace(/_/g,' ')}</td>
+        <td style="font-family:'Space Grotesk',sans-serif;font-weight:700">${s.co2?.toFixed(2)||'—'} kg</td>
+        <td><span class="grade g${s.rating||'B'}">${s.rating||'B'}</span></td>
+        <td style="color:var(--muted);font-size:.75rem">${(s.studentId||'').slice(0,10)}</td>
+        <td style="color:var(--muted);font-size:.72rem">${fmtTime(s.timestamp)}</td>
+      </tr>`;
+    }).join('');
+    document.getElementById('liveScans').innerHTML = rows || '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:20px">No scans yet</td></tr>';
+  });
+
+  // Leaderboard
+  const lbQ = query(collection(db,'students'), orderBy('totalScans','desc'), limit(10));
+  const lbSnap = await getDocs(lbQ);
+  const lbHtml = lbSnap.docs.map((d,i) => {
+    const s = d.data();
+    return `<div class="lb-row">
+      <div class="lb-rank ${i<3?'top':''}">${i+1}</div>
+      <div><div class="lb-name">${s.name||s.regId}</div><div class="lb-dept">${s.dept||''}</div></div>
+      <div style="text-align:right"><div class="lb-co2">${(s.totalCO2||0).toFixed(1)} kg</div><div style="font-size:.7rem;color:var(--muted)">${s.totalScans||0} scans</div></div>
+    </div>`;
+  }).join('');
+  document.getElementById('leaderboard').innerHTML = lbHtml || '<div class="empty-state"><div class="ico"><i data-lucide="trophy"></i></div>No data yet</div>';
+  lucide.createIcons();
+}
+
+async function loadMyScans(uid) {
+  const q = query(collection(db,'scans'), where('uid','==',uid), orderBy('timestamp','desc'), limit(20));
+  onSnapshot(q, snap => {
+    if (snap.empty) return;
+    const html = snap.docs.map(d => {
+      const s = d.data();
+      return `<div class="my-scan-row">
+        <div class="scan-ico"><i data-lucide="package"></i></div>
+        <div><div class="scan-name">${s.productName||'Product'}</div><div class="scan-cat">${(s.category||'').replace(/_/g,' ')}</div></div>
+        <div style="text-align:right"><div class="scan-co2" style="color:var(--g2)">${s.co2?.toFixed(2)||'—'} kg</div><div class="scan-time">${fmtTime(s.timestamp)}</div></div>
+      </div>`;
+    }).join('');
+    document.getElementById('myScans').innerHTML = html;
+    lucide.createIcons();
+  });
+}
+
+function renderEquiv(co2) {
+  const equivs = [
+    {val:(co2/21.4).toFixed(1), lbl:'Trees needed to absorb'},
+    {val:(co2/0.12).toFixed(0), lbl:'km driven by a car'},
+    {val:(co2/0.4).toFixed(0),  lbl:'Plastic bottles equiv.'},
+  ];
+  document.getElementById('equivCards').innerHTML = equivs.map(e=>`<div class="eq-card"><div class="eq-val">${e.val}</div><div class="eq-lbl">${e.lbl}</div></div>`).join('');
+}
+
+function renderDepts(depts) {
+  const sorted = Object.entries(depts).sort((a,b)=>b[1]-a[1]);
+  const max = sorted[0]?.[1]||1;
+  const html = sorted.slice(0,8).map(([dept,co2])=>`
+    <div class="dept-row">
+      <div class="dept-name" title="${dept}">${dept.split('(')[1]?.replace(')','') || dept.slice(0,10)}</div>
+      <div class="dept-bar-bg"><div class="dept-bar" style="width:${(co2/max*100)}%"></div></div>
+      <div class="dept-co2">${co2.toFixed(1)} kg</div>
+    </div>`).join('');
+  document.getElementById('deptBars').innerHTML = html || '<div class="empty-state"><div class="ico"><i data-lucide="landmark"></i></div>No department data yet</div>';
+  lucide.createIcons();
+}
+
+const CAT_COLORS = ['#6b9e78','#4a7c6f','#8b7355','#c9a96e','#c47060','#7a9e7e','#a8856a','#5d8a6b'];
+function renderCategories(cats) {
+  const sorted = Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  const total  = sorted.reduce((s,[,v])=>s+v,0)||1;
+  const svg = document.getElementById('donutSvg');
+  let offset = 0; const R=40, cx=60, cy=60, stroke=20;
+  const circ = 2*Math.PI*R;
+  svg.innerHTML = '';
+  sorted.forEach(([cat,val],i) => {
+    const pct  = val/total;
+    const dash = circ*pct;
+    const gap  = circ*(1-pct);
+    const el   = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    el.setAttribute('cx',cx); el.setAttribute('cy',cy); el.setAttribute('r',R);
+    el.setAttribute('fill','none'); el.setAttribute('stroke',CAT_COLORS[i%CAT_COLORS.length]);
+    el.setAttribute('stroke-width',stroke);
+    el.setAttribute('stroke-dasharray',`${dash} ${gap}`);
+    el.setAttribute('stroke-dashoffset',-(offset*circ-circ/4));
+    svg.appendChild(el);
+    offset += pct;
+  });
+  // center text
+  const t = document.createElementNS('http://www.w3.org/2000/svg','text');
+  t.setAttribute('x',cx); t.setAttribute('y',cy+4); t.setAttribute('text-anchor','middle');
+  t.setAttribute('fill','#fff'); t.setAttribute('font-size','9'); t.textContent=sorted.length+' cats';
+  svg.appendChild(t);
+  document.getElementById('catLegend').innerHTML = sorted.map(([cat,val],i)=>`
+    <div class="leg-row"><div class="leg-dot" style="background:${CAT_COLORS[i%CAT_COLORS.length]}"></div>
+    <div class="leg-lbl">${cat.replace(/_/g,' ')}</div>
+    <div class="leg-pct">${((val/total)*100).toFixed(0)}%</div></div>`).join('');
+}
+
+function renderTrend(days) {
+  if (!days.length) { document.getElementById('trendBars').innerHTML='<div class="empty-state" style="padding:10px;font-size:.78rem">No trend data yet</div>'; return; }
+  const max = Math.max(...days.map(d=>d.count||0), 1);
+  const html = days.slice(-7).map(d=>`
+    <div class="t-bar-wrap">
+      <div class="t-bar" style="height:${((d.count||0)/max*80)+4}px" title="${d.count} scans"></div>
+      <div class="t-lbl">${d.day||''}</div>
+    </div>`).join('');
+  document.getElementById('trendBars').innerHTML = html;
+}
+
+function fmtTime(ts) {
+  if (!ts) return '—';
+  const d = ts.toDate ? ts.toDate() : new Date(ts);
+  const diff = (Date.now()-d.getTime())/1000;
+  if (diff<60)   return 'Just now';
+  if (diff<3600) return Math.floor(diff/60)+'m ago';
+  if (diff<86400) return Math.floor(diff/3600)+'h ago';
+  return d.toLocaleDateString('en-IN',{day:'numeric',month:'short'});
+}
+
+// Init Lucide icons
+lucide.createIcons();
+</script>
+</body>
+</html>

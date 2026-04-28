@@ -1,0 +1,34 @@
+{
+  "8906069402767": {
+    "source": "openfoodfacts",
+    "name": "Veeba Veg Mayonnaise Tandori",
+    "brand": "Veeba",
+    "categories": "Egg-free mayonnaises",
+    "ecoscore": "unknown",
+    "co2_100g": null,
+    "quantity": ""
+  },
+  "8901012133057": {
+    "source": "upcitemdb",
+    "name": "Listerine Coolmint Mw 250ml Free Shipping Lowest Price Top Quality F$",
+    "brand": "LISTERINE",
+    "categories": "Health & Beauty > Personal Care > Oral Care > Toothpaste",
+    "description": ""
+  },
+  "45301001": {
+    "source": "upcitemdb",
+    "name": "Deluxe Small Business Sales 45-30100-1 30 in. x 100 ft. Clear Polypropylene Film Roll, Red",
+    "brand": "Deluxe Small Business Sales",
+    "categories": "Home & Garden",
+    "description": "Our Polypropylene Film, in handy rolls, is perfect for wrapping gift baskets and flowers. Features 1 polypropylene film roll. Made of 1.2 mil clear polypropylene film. Meets FDA requirements for direct food contact. Recyclable. Size - 30 in. x 100 ft. Color - Red"
+  },
+  "29051458": {
+    "source": "openfoodfacts",
+    "name": "Pr\u00e4sent-Ei",
+    "brand": "Aldi",
+    "categories": "Festive foods,Easter food,de:Osters\u00fc\u00dfigkeiten",
+    "ecoscore": "unknown",
+    "co2_100g": null,
+    "quantity": "350\u202fg"
+  }
+}
