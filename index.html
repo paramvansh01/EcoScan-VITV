@@ -6,6 +6,7 @@
 <meta name="description" content="Scan any product barcode. Instantly see its carbon footprint. Together, track VIT Vellore's campus sustainability impact."/>
 <link rel="preconnect" href="https://fonts.googleapis.com"/>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700;800&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Caveat:wght@400..700&family=Kalam:wght@300;400;700&display=swap" rel="stylesheet"/>
 <script src="https://unpkg.com/lucide@latest"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <style>
@@ -40,8 +41,138 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 40px;display:fl
 .nav-signout:hover{border-color:var(--accent);color:var(--accent)}
 .hidden{display:none!important}
 
+
+/* WHITEBOARD STYLES */
+#scroll-container { height: 1800vh; }
+#globe-section { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 1; transition: opacity 0.5s; pointer-events: none; }
+#campus-section { position: fixed; top: 0; left: 0; width: 100%; height: 100vh; z-index: 0; }
+#campus-scene { position: absolute; inset: 0; background: #070908; }
+#campus-overlay { transition: opacity 0.5s; }
+
+#whiteboard-layer {
+  position: fixed; top: 12vh; left: 15vw; width: 70vw; height: 76vh;
+  z-index: 10; opacity: 0; pointer-events: none; overflow: hidden;
+  transition: opacity 0.5s;
+  -webkit-clip-path: inset(0 0 0 0);
+  clip-path: inset(0 0 0 0);
+}
+#whiteboard-scroll-content {
+  width: 100%; max-width: 100%; position: absolute; top: 0; left: 0;
+  padding: 32px 28px;
+  color: #1a1a1a; font-family: 'Inter', sans-serif;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+/* Professional whiteboard typography */
+#whiteboard-scroll-content .section-label {
+  font-family: 'Space Grotesk', sans-serif; font-size: .7rem; font-weight: 700;
+  letter-spacing: 3px; text-transform: uppercase;
+  color: #2a6b45; -webkit-text-fill-color: #2a6b45;
+  text-shadow: none; background: none;
+}
+#whiteboard-scroll-content h2, #whiteboard-scroll-content .section-title {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.6rem;
+  color: #111; -webkit-text-fill-color: #111;
+  text-shadow: none; background: none; letter-spacing: -0.5px;
+}
+#whiteboard-scroll-content h3 {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: 1rem;
+  color: #1a3a28; -webkit-text-fill-color: #1a3a28;
+  text-shadow: none; background: none;
+}
+#whiteboard-scroll-content h4 {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 700; font-size: .95rem;
+  color: #222; -webkit-text-fill-color: #222;
+  text-shadow: none; background: none;
+}
+#whiteboard-scroll-content p {
+  font-family: 'Inter', sans-serif; color: #333; -webkit-text-fill-color: #333;
+  background: none; text-shadow: none; font-size: .85rem; line-height: 1.6;
+}
+#whiteboard-scroll-content .section-sub {
+  font-size: .9rem; color: #555; -webkit-text-fill-color: #555; max-width: 100%;
+}
+#whiteboard-scroll-content .stat-val {
+  font-family: 'Space Grotesk', sans-serif; font-weight: 800; font-size: 1.8rem;
+  color: #2a6b45; -webkit-text-fill-color: #2a6b45;
+  background: none; text-shadow: none; line-height: 1;
+}
+#whiteboard-scroll-content .stat-lbl {
+  font-family: 'Inter', sans-serif; color: #555; -webkit-text-fill-color: #555;
+  background: none; text-shadow: none; font-size: .7rem;
+}
+/* Feature cards */
+#whiteboard-scroll-content .feat, #whiteboard-scroll-content .chart-card {
+  background: rgba(42, 107, 69, 0.04); border: 1.5px solid rgba(42, 107, 69, 0.25);
+  box-shadow: none; backdrop-filter: none; border-radius: 12px;
+}
+#whiteboard-scroll-content .feat:hover { border-color: rgba(42, 107, 69, 0.5); background: rgba(42, 107, 69, 0.08); }
+#whiteboard-scroll-content .feat::before { display: none; }
+#whiteboard-scroll-content .feat-icon { filter: none; color: #2a6b45; }
+/* Stats bar */
+#whiteboard-scroll-content .stats-bar {
+  background: rgba(42, 107, 69, 0.06); box-shadow: none; backdrop-filter: none;
+  border: 1.5px solid rgba(42, 107, 69, 0.2); border-radius: 12px; margin: 0 0 30px 0;
+}
+#whiteboard-scroll-content .stat { border-right: 1px solid rgba(42, 107, 69, 0.15); }
+/* CO2 section */
+#whiteboard-scroll-content .co2-section { background: transparent; border: none; padding: 30px 0; }
+#whiteboard-scroll-content .chart-card-title { color: #111; -webkit-text-fill-color: #111; font-family: 'Space Grotesk', sans-serif; }
+#whiteboard-scroll-content .chart-card-sub { color: #666; -webkit-text-fill-color: #666; }
+#whiteboard-scroll-content .cta-section::before { display: none; }
+/* How it works — horizontal scroll inside whiteboard */
+#whiteboard-scroll-content #how-scroll-wrap { height: auto; position: relative; }
+#whiteboard-scroll-content #how { background: transparent; border: none; height: auto; position: relative; overflow: visible; }
+#whiteboard-scroll-content .steps-container { overflow: hidden; }
+#whiteboard-scroll-content .steps-container::before { display: none; }
+#whiteboard-scroll-content .steps-track {
+  display: flex; flex-wrap: nowrap; gap: 24px; padding: 10px 0; width: max-content;
+  transition: transform 0.5s ease;
+}
+#whiteboard-scroll-content .step-h {
+  width: 200px; flex-shrink: 0; opacity: 0.4; transform: scale(0.92);
+  transition: all 0.4s ease; text-align: center;
+}
+#whiteboard-scroll-content .step-h.active-step { opacity: 1; transform: scale(1.05); }
+#whiteboard-scroll-content .step-num {
+  background: transparent; border: 2.5px solid #2a6b45; box-shadow: none;
+  color: #2a6b45; backdrop-filter: none; width: 48px; height: 48px; font-size: 1.1rem;
+}
+#whiteboard-scroll-content .active-step .step-num {
+  background: #2a6b45; color: #fff; border-color: #2a6b45;
+}
+/* CTA button */
+#whiteboard-scroll-content .btn-solid {
+  background: #2a6b45; border: none; color: #fff; border-radius: 10px;
+  box-shadow: 0 4px 12px rgba(42, 107, 69, 0.3) !important; transition: all 0.2s;
+}
+#whiteboard-scroll-content .btn-solid:hover { opacity: 0.9; transform: translateY(-1px); box-shadow: 0 6px 16px rgba(42, 107, 69, 0.4) !important; }
+#whiteboard-scroll-content .cta-section h2 {
+  background: linear-gradient(135deg, #111, #2a6b45); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+}
+#whiteboard-scroll-content .cta-section p { color: #444; -webkit-text-fill-color: #444; }
+/* Donut legend — dark text */
+#whiteboard-scroll-content .dl-label { color: #222; -webkit-text-fill-color: #222; }
+#whiteboard-scroll-content .dl-gt { color: #555; -webkit-text-fill-color: #555; }
+#whiteboard-scroll-content .dl-item { background: rgba(42,107,69,0.04); border-color: rgba(42,107,69,0.12); }
+/* Layout containment */
+#whiteboard-scroll-content .section { padding: 30px 0; max-width: 100%; overflow: hidden; box-sizing: border-box; }
+#whiteboard-scroll-content .section-title,
+#whiteboard-scroll-content .section-sub,
+#whiteboard-scroll-content .section-label,
+#whiteboard-scroll-content h2,
+#whiteboard-scroll-content h3,
+#whiteboard-scroll-content p { word-wrap: break-word; overflow-wrap: break-word; max-width: 100%; }
+#whiteboard-scroll-content .feature-grid { max-width: 100%; overflow: hidden; }
+#whiteboard-scroll-content .stats-bar { max-width: 100%; overflow: hidden; box-sizing: border-box; }
+#whiteboard-scroll-content .charts-wrap { max-width: 100%; overflow: hidden; }
+#whiteboard-scroll-content .chart-card { max-width: 100%; overflow: hidden; box-sizing: border-box; }
+#whiteboard-scroll-content .donut-wrap { max-width: 100%; overflow: hidden; }
+#whiteboard-scroll-content .co2-section { max-width: 100%; overflow: hidden; box-sizing: border-box; }
+#whiteboard-scroll-content .cta-section { max-width: 100%; overflow: hidden; box-sizing: border-box; }
+
 /* GLOBE HERO */
-#globe-section{position:relative;height:500vh;width:100%}
+
 #globe-container{position:sticky;top:0;width:100%;height:100vh;overflow:hidden;background:#090b0a}
 #globe-canvas{width:100%;height:100%;display:block}
 #globe-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;pointer-events:none;z-index:10}
@@ -57,7 +188,7 @@ nav{position:fixed;top:0;left:0;right:0;z-index:200;padding:16px 40px;display:fl
 #continue-hint.show{opacity:1}
 
 /* VIT CAMPUS SECTION */
-#campus-scene{position:relative;width:100%;height:100vh;overflow:hidden;background:#070908}
+
 #campus-3d-canvas{width:100%;height:100%;display:block}
 #campus-overlay{position:absolute;bottom:60px;left:50%;transform:translateX(-50%);z-index:10;display:flex;flex-direction:column;align-items:center;gap:16px;text-align:center}
 #campus-overlay .campus-label{font-size:.72rem;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--accent)}
@@ -175,8 +306,9 @@ footer a:hover{color:#fff}
   </div>
 </nav>
 
+<div id="scroll-container">
 <!-- GLOBE HERO (scroll-driven greening) -->
-<section id="globe-section">
+<div id="globe-section">
   <div id="globe-container">
     <canvas id="globe-canvas"></canvas>
     <div id="globe-overlay">
@@ -189,10 +321,10 @@ footer a:hover{color:#fff}
       <div id="progress-bar"><div id="progress-fill"></div></div>
     </div>
   </div>
-</section>
+</div>
 
 <!-- VIT CAMPUS 3D SCENE -->
-<section id="campus-scene">
+<div id="campus-section"><div id="campus-scene">
   <canvas id="campus-3d-canvas"></canvas>
   <div id="campus-overlay">
     <h2>Campus Carbon Intelligence</h2>
@@ -202,8 +334,10 @@ footer a:hover{color:#fff}
       <a class="btn-outline" href="dashboard.html"><i data-lucide="bar-chart-3" style="width:16px;height:16px"></i> Dashboard</a>
     </div>
   </div>
-</section>
+</div></div>
 
+
+<div id="whiteboard-layer"><div id="whiteboard-scroll-content">
 <!-- FEATURES -->
 <section class="section" id="about">
   <div class="reveal">
@@ -282,10 +416,9 @@ footer a:hover{color:#fff}
   </a>
 </section>
 
-<footer>
-  <p>EcoScan VIT &nbsp;·&nbsp; Track 3: Eco-Campus & Sustainability &nbsp;·&nbsp; VIT Vellore Hackathon 2026</p>
-  <p style="margin-top:6px">Built with OpenCV · EasyOCR · PyTesseract · Firebase · IPCC Carbon Data &nbsp;·&nbsp; <a href="dashboard.html">Dashboard</a> &nbsp;·&nbsp; <a href="ecoscan.html">Scanner</a></p>
-</footer>
+
+</div></div>
+</div>
 
 <script>
 // ── HYPER-REALISTIC EARTH WITH GROWING TREES & FLOWERS ──
@@ -409,35 +542,58 @@ const greenPct=document.getElementById('green-pct');
 
 function onScroll(){
   window.requestAnimationFrame(() => {
-    // Globe Scroll
-    const rect=globeSection.getBoundingClientRect();
+    const sY = window.scrollY;
     const vH = document.documentElement.clientHeight;
-    const total=globeSection.offsetHeight - vH;
-    const scrolled=Math.max(0,Math.min(1,-rect.top/total));
-    greenLevel=scrolled;
-    progressFill.style.height=(scrolled*100)+'%';
-    greenPct.textContent=Math.round(scrolled*100)+'%';
+    
+    // Globe Scroll (0 to 400vh)
+    const globeEnd = vH * 4;
+    let globeP = Math.min(1, Math.max(0, sY / globeEnd));
+    greenLevel = globeP;
+    
+    if (progressFill && greenPct) {
+        progressFill.style.height=(globeP*100)+'%';
+        greenPct.textContent=Math.round(globeP*100)+'%';
+    }
+    
     const overlay=document.getElementById('globe-overlay');
-    overlay.style.opacity=Math.max(0,1-scrolled*3);
+    if(overlay) overlay.style.opacity=Math.max(0,1-globeP*3);
+    
+    const globeSec = document.getElementById('globe-section');
+    if(globeSec) {
+        if(sY > globeEnd - vH*0.2) {
+           globeSec.style.opacity = 1 - (sY - (globeEnd - vH*0.2)) / (vH*0.2);
+        } else {
+           globeSec.style.opacity = 1;
+        }
+    }
     
     // How it works horizontal scroll
-    const hwWrap = document.getElementById('how-scroll-wrap');
+    // How it works — auto-cycle steps based on whiteboard scroll position
     const sTrack = document.getElementById('steps-track');
     const sEls = document.querySelectorAll('.step-h');
-    if(hwWrap && sTrack && sEls.length > 0) {
-      const hwRect = hwWrap.getBoundingClientRect();
-      const hwTotal = hwWrap.offsetHeight - vH;
-      let hwP = -hwRect.top / hwTotal;
-      hwP = Math.max(0, Math.min(1, hwP));
+    const wbLayer = document.getElementById('whiteboard-layer');
+    const wbContent = document.getElementById('whiteboard-scroll-content');
+    const howSection = document.getElementById('how-scroll-wrap');
+    if(sTrack && sEls.length > 0 && wbLayer && wbContent && howSection) {
+      // Check if the how section is within the visible part of the whiteboard
+      const wbH = wbLayer.offsetHeight;
+      const contentTransform = wbContent.style.transform;
+      const translateMatch = contentTransform.match(/translateY\((-?\d+\.?\d*)px\)/);
+      const translateY = translateMatch ? parseFloat(translateMatch[1]) : 0;
+      const howTop = howSection.offsetTop + translateY;
+      const howBot = howTop + howSection.offsetHeight;
       
-      const maxTrans = 450 * (sEls.length - 1);
-      sTrack.style.transform = `translateX(${-maxTrans * hwP}px)`;
-      
-      const aIdx = Math.round(hwP * (sEls.length - 1));
-      sEls.forEach((el, i) => {
-        if(i === aIdx) el.classList.add('active-step');
-        else el.classList.remove('active-step');
-      });
+      if(howBot > 0 && howTop < wbH) {
+        // How section is visible — calculate which step to highlight
+        const visibleProgress = Math.max(0, Math.min(1, -howTop / Math.max(1, howSection.offsetHeight - wbH * 0.5)));
+        const aIdx = Math.min(sEls.length - 1, Math.floor(visibleProgress * sEls.length));
+        const stepW = 224; // step width + gap
+        sTrack.style.transform = `translateX(${-aIdx * stepW}px)`;
+        sEls.forEach((el, i) => {
+          if(i === aIdx) el.classList.add('active-step');
+          else el.classList.remove('active-step');
+        });
+      }
     }
   });
 }
@@ -469,7 +625,7 @@ animate();
 })();
 
 </script>
-<script src="campus_scene.js"></script>
+<script src="campus_scene.js?v=13"></script>
 <script>
 // ── CHARTS (preserved from original) ──
 (function(){
@@ -485,7 +641,7 @@ const LP={t:42,r:28,b:48,l:56};
 let lineCssW=0,lineCssH=340,lineAnimProgress=0,lineRAF;
 function setupLine(){const d=window.devicePixelRatio||1;const c=lineCanvas.closest('.chart-card');lineCssW=c.clientWidth-56;lineCssH=340;lineCanvas.style.width=lineCssW+'px';lineCanvas.style.height=lineCssH+'px';lineCanvas.width=Math.round(lineCssW*d);lineCanvas.height=Math.round(lineCssH*d);lCtx.setTransform(d,0,0,d,0,0);}
 function lineCoords(){const W=lineCssW,H=lineCssH,aW=W-LP.l-LP.r,aH=H-LP.t-LP.b,n=YEARS.length,minV=20,maxV=40;return{W,H,aW,aH,n,minV,maxV,px:i=>LP.l+(i/(n-1))*aW,py:v=>LP.t+aH-((v-minV)/(maxV-minV))*aH};}
-function drawLine(p){if(!lineCssW)return;const{W,H,aW,aH,n,minV,maxV,px,py}=lineCoords();lCtx.clearRect(0,0,W,H);const dN=Math.max(2,Math.round(n*Math.min(1,p)));lCtx.strokeStyle='rgba(255,255,255,0.05)';lCtx.lineWidth=1;for(let g=0;g<=5;g++){const v=minV+g*4,gy=py(v);lCtx.beginPath();lCtx.moveTo(LP.l,gy);lCtx.lineTo(LP.l+aW,gy);lCtx.stroke();lCtx.fillStyle='rgba(255,255,255,0.3)';lCtx.font='11px Inter';lCtx.textAlign='right';lCtx.textBaseline='middle';lCtx.fillText(v+' Gt',LP.l-8,gy);}lCtx.fillStyle='rgba(255,255,255,0.3)';lCtx.font='10px Inter';lCtx.textAlign='center';lCtx.textBaseline='top';YEARS.forEach((yr,i)=>{if(yr%5===0||yr===2025)lCtx.fillText(yr,px(i),LP.t+aH+9);});if(dN<2)return;lCtx.save();const grd=lCtx.createLinearGradient(0,LP.t,0,LP.t+aH);grd.addColorStop(0,'rgba(74,124,94,0.15)');grd.addColorStop(1,'rgba(74,124,94,0.01)');lCtx.beginPath();lCtx.moveTo(px(0),LP.t+aH);for(let i=0;i<dN;i++)lCtx.lineTo(px(i),py(EMISSIONS[i]));lCtx.lineTo(px(dN-1),LP.t+aH);lCtx.closePath();lCtx.fillStyle=grd;lCtx.fill();lCtx.restore();lCtx.save();lCtx.strokeStyle='#4a7c5e';lCtx.lineWidth=2.5;lCtx.lineJoin='round';lCtx.lineCap='round';lCtx.beginPath();lCtx.moveTo(px(0),py(EMISSIONS[0]));for(let i=1;i<dN;i++)lCtx.lineTo(px(i),py(EMISSIONS[i]));lCtx.stroke();lCtx.restore();if(p>.4){const a=Math.min(1,(p-.4)*3.5);MILESTONES.forEach(m=>{const mi=YEARS.indexOf(m.yr);if(mi<0||mi>=dN)return;const mx=px(mi),my=py(EMISSIONS[mi]);lCtx.fillStyle='#8a7a55';lCtx.beginPath();lCtx.arc(mx,my,4,0,Math.PI*2);lCtx.fill();lCtx.globalAlpha=a;lCtx.fillStyle='#8a7a55';lCtx.font='bold 9px Inter';lCtx.textAlign=mi>n/2?'right':'left';lCtx.textBaseline='bottom';lCtx.fillText(m.lbl,mx+(mi>n/2?-8:8),my-7);lCtx.globalAlpha=1;});}}
+function drawLine(p){if(!lineCssW)return;const{W,H,aW,aH,n,minV,maxV,px,py}=lineCoords();lCtx.clearRect(0,0,W,H);const dN=Math.max(2,Math.round(n*Math.min(1,p)));lCtx.strokeStyle='rgba(0,0,0,0.08)';lCtx.lineWidth=1;for(let g=0;g<=5;g++){const v=minV+g*4,gy=py(v);lCtx.beginPath();lCtx.moveTo(LP.l,gy);lCtx.lineTo(LP.l+aW,gy);lCtx.stroke();lCtx.fillStyle='rgba(0,0,0,0.45)';lCtx.font='11px Inter';lCtx.textAlign='right';lCtx.textBaseline='middle';lCtx.fillText(v+' Gt',LP.l-8,gy);}lCtx.fillStyle='rgba(0,0,0,0.45)';lCtx.font='10px Inter';lCtx.textAlign='center';lCtx.textBaseline='top';YEARS.forEach((yr,i)=>{if(yr%5===0||yr===2025)lCtx.fillText(yr,px(i),LP.t+aH+9);});if(dN<2)return;lCtx.save();const grd=lCtx.createLinearGradient(0,LP.t,0,LP.t+aH);grd.addColorStop(0,'rgba(42,107,69,0.18)');grd.addColorStop(1,'rgba(42,107,69,0.02)');lCtx.beginPath();lCtx.moveTo(px(0),LP.t+aH);for(let i=0;i<dN;i++)lCtx.lineTo(px(i),py(EMISSIONS[i]));lCtx.lineTo(px(dN-1),LP.t+aH);lCtx.closePath();lCtx.fillStyle=grd;lCtx.fill();lCtx.restore();lCtx.save();lCtx.strokeStyle='#2a6b45';lCtx.lineWidth=2.5;lCtx.lineJoin='round';lCtx.lineCap='round';lCtx.beginPath();lCtx.moveTo(px(0),py(EMISSIONS[0]));for(let i=1;i<dN;i++)lCtx.lineTo(px(i),py(EMISSIONS[i]));lCtx.stroke();lCtx.restore();if(p>.4){const a=Math.min(1,(p-.4)*3.5);MILESTONES.forEach(m=>{const mi=YEARS.indexOf(m.yr);if(mi<0||mi>=dN)return;const mx=px(mi),my=py(EMISSIONS[mi]);lCtx.fillStyle='#6b5a2a';lCtx.beginPath();lCtx.arc(mx,my,4,0,Math.PI*2);lCtx.fill();lCtx.globalAlpha=a;lCtx.fillStyle='#3a3020';lCtx.font='bold 9px Inter';lCtx.textAlign=mi>n/2?'right':'left';lCtx.textBaseline='bottom';lCtx.fillText(m.lbl,mx+(mi>n/2?-8:8),my-7);lCtx.globalAlpha=1;});}}
 function animateLine(){lineAnimProgress+=.016;if(lineAnimProgress>1)lineAnimProgress=1;drawLine(lineAnimProgress);if(lineAnimProgress<1)lineRAF=requestAnimationFrame(animateLine);}
 lineCanvas.addEventListener('mousemove',e=>{if(lineAnimProgress<.5||!lineCssW)return;const rect=lineCanvas.getBoundingClientRect();const mx=e.clientX-rect.left;const{aW,aH,n,px,py}=lineCoords();const idx=Math.max(0,Math.min(n-1,Math.round((mx-LP.l)/aW*(n-1))));drawLine(1);const x=px(idx),y=py(EMISSIONS[idx]);lCtx.save();lCtx.setLineDash([3,3]);lCtx.strokeStyle='rgba(255,255,255,0.15)';lCtx.lineWidth=1;lCtx.beginPath();lCtx.moveTo(x,LP.t);lCtx.lineTo(x,LP.t+aH);lCtx.stroke();lCtx.setLineDash([]);lCtx.fillStyle='#fff';lCtx.beginPath();lCtx.arc(x,y,3,0,Math.PI*2);lCtx.fill();const tip=YEARS[idx]+': '+EMISSIONS[idx]+' GtCO2';lCtx.font='bold 11px Inter';const tw=lCtx.measureText(tip).width+16;const tx=Math.min(x+10,lineCssW-tw-4);const ty=Math.max(LP.t+4,y-32);lCtx.fillStyle='rgba(9,11,10,0.95)';lCtx.strokeStyle='#4a7c5e';lCtx.lineWidth=1;lCtx.beginPath();lCtx.roundRect(tx,ty,tw,24,6);lCtx.fill();lCtx.stroke();lCtx.fillStyle='#4a7c5e';lCtx.textBaseline='middle';lCtx.textAlign='left';lCtx.fillText(tip,tx+8,ty+12);lCtx.restore();});
 lineCanvas.addEventListener('mouseleave',()=>drawLine(lineAnimProgress>=1?1:lineAnimProgress));
@@ -493,7 +649,7 @@ const donutCanvas=document.getElementById('donutCanvas');
 const dCtx=donutCanvas.getContext('2d');
 let donutSide=0,donutAnimProgress=0,donutRAF;
 function setupDonut(){const d=window.devicePixelRatio||1;const c=donutCanvas.closest('.chart-card');donutSide=Math.min(320,c.clientWidth-56);donutCanvas.style.width=donutSide+'px';donutCanvas.style.height=donutSide+'px';donutCanvas.width=Math.round(donutSide*d);donutCanvas.height=Math.round(donutSide*d);dCtx.setTransform(d,0,0,d,0,0);}
-function drawDonut(p){if(!donutSide)return;const S=donutSide;dCtx.clearRect(0,0,S,S);const cx=S/2,cy=S/2,oR=S*.42,iR=oR*.55,tot=SECTORS.reduce((a,c)=>a+c.val,0);let angle=-Math.PI/2;SECTORS.forEach(sec=>{const sl=(sec.val/tot)*Math.PI*2*p;dCtx.fillStyle=sec.color;dCtx.beginPath();dCtx.moveTo(cx+iR*Math.cos(angle),cy+iR*Math.sin(angle));dCtx.arc(cx,cy,oR,angle,angle+sl);dCtx.arc(cx,cy,iR,angle+sl,angle,true);dCtx.closePath();dCtx.fill();angle+=sl;});if(p>=.98){dCtx.fillStyle='rgba(232,236,230,0.9)';dCtx.font='bold 16px Inter';dCtx.textAlign='center';dCtx.textBaseline='middle';dCtx.fillText('37.4 Gt',cx,cy-10);dCtx.fillStyle='rgba(122,133,120,0.8)';dCtx.font='10px Inter';dCtx.fillText('global CO₂ 2023',cx,cy+9);}}
+function drawDonut(p){if(!donutSide)return;const S=donutSide;dCtx.clearRect(0,0,S,S);const cx=S/2,cy=S/2,oR=S*.42,iR=oR*.55,tot=SECTORS.reduce((a,c)=>a+c.val,0);let angle=-Math.PI/2;SECTORS.forEach(sec=>{const sl=(sec.val/tot)*Math.PI*2*p;dCtx.fillStyle=sec.color;dCtx.beginPath();dCtx.moveTo(cx+iR*Math.cos(angle),cy+iR*Math.sin(angle));dCtx.arc(cx,cy,oR,angle,angle+sl);dCtx.arc(cx,cy,iR,angle+sl,angle,true);dCtx.closePath();dCtx.fill();angle+=sl;});if(p>=.98){dCtx.fillStyle='rgba(17,17,17,0.85)';dCtx.font='bold 16px Inter';dCtx.textAlign='center';dCtx.textBaseline='middle';dCtx.fillText('37.4 Gt',cx,cy-10);dCtx.fillStyle='rgba(85,85,85,0.8)';dCtx.font='10px Inter';dCtx.fillText('global CO₂ 2023',cx,cy+9);}}
 function animateDonut(){donutAnimProgress+=.022;if(donutAnimProgress>1)donutAnimProgress=1;drawDonut(donutAnimProgress);if(donutAnimProgress<1)donutRAF=requestAnimationFrame(animateDonut);}
 const legendEl=document.getElementById('donutLegend');
 SECTORS.forEach(sec=>{const gt=(TOTAL_GT*sec.val/100).toFixed(1);const r=document.createElement('div');r.className='dl-item';r.innerHTML=`<span class="dl-dot" style="background:${sec.color}"></span><span class="dl-label">${sec.label}</span><span class="dl-pct" style="color:${sec.color}">${sec.val}%</span><span class="dl-gt">${gt} Gt</span>`;legendEl.appendChild(r);});

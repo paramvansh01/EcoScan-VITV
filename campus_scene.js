@@ -254,6 +254,315 @@ const building=buildBuilding();
 building.position.set(0,0,-4);
 scene.add(building);
 
+
+// ── REALISTIC CLASSROOM (based on reference image) ──
+const classroomGroup = new THREE.Group();
+classroomGroup.position.set(0, 0, -25);
+
+// Room dimensions (local space): 30 wide, 12 tall, 28 deep
+const RW = 30, RH = 12, RD = 28;
+
+// Materials — warm beige/cream walls like reference
+const wallMatC = new THREE.MeshPhongMaterial({color: 0xd4c5a9, specular: 0x111111, shininess: 5});
+const wallMatLower = new THREE.MeshPhongMaterial({color: 0x8b7355}); // darker wainscoting
+const ceilMat = new THREE.MeshPhongMaterial({color: 0xe8ddd0, specular: 0x222222, shininess: 10});
+const floorMatC = new THREE.MeshPhongMaterial({color: 0x5a3d2b, specular: 0x222211, shininess: 20});
+const deskTopMat = new THREE.MeshPhongMaterial({color: 0xc4a870, specular: 0x332211, shininess: 30});
+const deskSideMat = new THREE.MeshPhongMaterial({color: 0x8b6914});
+const deskLegMat = new THREE.MeshPhongMaterial({color: 0x6b4e2a});
+const seatMat = new THREE.MeshPhongMaterial({color: 0x7a5c3a});
+const metalMat = new THREE.MeshPhongMaterial({color: 0x555555, specular: 0x888888, shininess: 60});
+
+// ── WALLS ──
+// Back wall (behind the board)
+const backWall = new THREE.Mesh(new THREE.BoxGeometry(RW+1, RH, 1), wallMatC);
+backWall.position.set(0, RH/2, -RD/2); backWall.receiveShadow=true; classroomGroup.add(backWall);
+// Left wall
+const leftWall = new THREE.Mesh(new THREE.BoxGeometry(1, RH, RD), wallMatC);
+leftWall.position.set(-RW/2, RH/2, 0); leftWall.receiveShadow=true; classroomGroup.add(leftWall);
+// Right wall
+const rightWall = new THREE.Mesh(new THREE.BoxGeometry(1, RH, RD), wallMatC);
+rightWall.position.set(RW/2, RH/2, 0); rightWall.receiveShadow=true; classroomGroup.add(rightWall);
+// Front wall (entrance side, partial — with a door gap)
+const frontWallL = new THREE.Mesh(new THREE.BoxGeometry(RW/2-2, RH, 1), wallMatC);
+frontWallL.position.set(-RW/4-1, RH/2, RD/2); classroomGroup.add(frontWallL);
+const frontWallR = new THREE.Mesh(new THREE.BoxGeometry(RW/2-2, RH, 1), wallMatC);
+frontWallR.position.set(RW/4+1, RH/2, RD/2); classroomGroup.add(frontWallR);
+const frontWallTop = new THREE.Mesh(new THREE.BoxGeometry(4, RH-3.5, 1), wallMatC);
+frontWallTop.position.set(0, RH-((RH-3.5)/2), RD/2); classroomGroup.add(frontWallTop);
+
+// Lower wainscoting strip on side walls
+const wainL = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.2, RD-0.5), wallMatLower);
+wainL.position.set(-RW/2+0.55, 0.6, 0); classroomGroup.add(wainL);
+const wainR = new THREE.Mesh(new THREE.BoxGeometry(0.15, 1.2, RD-0.5), wallMatLower);
+wainR.position.set(RW/2-0.55, 0.6, 0); classroomGroup.add(wainR);
+
+// ── CEILING ──
+const ceiling = new THREE.Mesh(new THREE.BoxGeometry(RW, 0.5, RD), ceilMat);
+ceiling.position.set(0, RH, 0); classroomGroup.add(ceiling);
+// Ceiling panels / trim
+const ceilTrimMat = new THREE.MeshPhongMaterial({color: 0xc8bda8});
+for(let i=-1; i<=1; i+=2){
+  const trim = new THREE.Mesh(new THREE.BoxGeometry(RW-1, 0.15, 0.3), ceilTrimMat);
+  trim.position.set(0, RH-0.3, i*5); classroomGroup.add(trim);
+}
+// Red accent strip along ceiling edge (like reference)
+const redStrip = new THREE.MeshPhongMaterial({color: 0x8b2020});
+const redTrimB = new THREE.Mesh(new THREE.BoxGeometry(RW-0.5, 0.2, 0.15), redStrip);
+redTrimB.position.set(0, RH-0.5, -RD/2+0.6); classroomGroup.add(redTrimB);
+
+// ── FLOOR ──
+const roomFloor = new THREE.Mesh(new THREE.BoxGeometry(RW, 0.3, RD), floorMatC);
+roomFloor.position.set(0, 0, 0); roomFloor.receiveShadow=true; classroomGroup.add(roomFloor);
+
+// ── FLUORESCENT TUBE LIGHTS (like reference) ──
+const lightTubeMat = new THREE.MeshPhongMaterial({color: 0xffffff, emissive: 0xfff8e8, emissiveIntensity: 0.9});
+const lightFixtureMat = new THREE.MeshPhongMaterial({color: 0xd0d0d0});
+function addTubeLight(x, z){
+  // Fixture housing
+  const fix = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.08, 0.35), lightFixtureMat);
+  fix.position.set(x, RH-0.35, z); classroomGroup.add(fix);
+  // Glowing tube
+  const tube = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.06, 0.08), lightTubeMat);
+  tube.position.set(x, RH-0.42, z-0.08); classroomGroup.add(tube);
+  const tube2 = new THREE.Mesh(new THREE.BoxGeometry(1.0, 0.06, 0.08), lightTubeMat);
+  tube2.position.set(x, RH-0.42, z+0.08); classroomGroup.add(tube2);
+  // Point light for illumination
+  const pl = new THREE.PointLight(0xfff0d0, 0.4, 15);
+  pl.position.set(x, RH-0.8, z); classroomGroup.add(pl);
+}
+// 4 columns × 3 rows of lights across ceiling
+for(let row=-1; row<=1; row++){
+  for(let col=-1.5; col<=1.5; col++){
+    addTubeLight(col*6, row*7);
+  }
+}
+
+// ── PROJECTOR (hanging from ceiling) ──
+const projBody = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.4, 0.6), metalMat);
+projBody.position.set(0, RH-1.2, -2); classroomGroup.add(projBody);
+const projMount = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.08, 0.8, 8), metalMat);
+projMount.position.set(0, RH-0.4, -2); classroomGroup.add(projMount);
+const projLens = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.15, 0.15, 12), 
+  new THREE.MeshPhongMaterial({color: 0x1a2a4a, specular: 0x8888ff, shininess: 100}));
+projLens.rotation.x = Math.PI/2;
+projLens.position.set(0, RH-1.3, -2.35); classroomGroup.add(projLens);
+
+// ── WHITEBOARD / PROJECTION SCREEN ──
+const wbMat = new THREE.MeshPhongMaterial({color: 0xf5f5f0, specular: 0x222222, shininess: 60});
+const wb = new THREE.Mesh(new THREE.PlaneGeometry(24, 10), wbMat);
+wb.position.set(0, 6, -RD/2+0.6); classroomGroup.add(wb);
+
+// Board frame (aluminium look)
+const frameMat = new THREE.MeshPhongMaterial({color: 0x999999, specular: 0xaaaaaa, shininess: 50});
+const frameT = new THREE.Mesh(new THREE.BoxGeometry(24.4, 0.25, 0.12), frameMat);
+frameT.position.set(0, 11.1, -RD/2+0.6); classroomGroup.add(frameT);
+const frameB = new THREE.Mesh(new THREE.BoxGeometry(24.4, 0.25, 0.12), frameMat);
+frameB.position.set(0, 0.9, -RD/2+0.6); classroomGroup.add(frameB);
+const frameL = new THREE.Mesh(new THREE.BoxGeometry(0.25, 10.45, 0.12), frameMat);
+frameL.position.set(-12.2, 6, -RD/2+0.6); classroomGroup.add(frameL);
+const frameR = new THREE.Mesh(new THREE.BoxGeometry(0.25, 10.45, 0.12), frameMat);
+frameR.position.set(12.2, 6, -RD/2+0.6); classroomGroup.add(frameR);
+// Marker tray
+const tray = new THREE.Mesh(new THREE.BoxGeometry(8, 0.15, 0.3), frameMat);
+tray.position.set(0, 0.85, -RD/2+0.75); classroomGroup.add(tray);
+
+// World-space corners of the whiteboard interior (inset from frame)
+// Board center: local(0, 6, -RD/2+0.6) = local(0, 6, -13.4), world = (0, 6, -38.4)
+const wbZ = -25 + (-RD/2 + 0.6); // world z of board
+const wbCornerTL = new THREE.Vector3(-11.5, 10.5, wbZ + 0.05);
+const wbCornerBR = new THREE.Vector3(11.5, 2.0, wbZ + 0.05);
+
+// ── DESK ROWS (5 rows, center aisle, like reference image) ──
+function buildDeskRow(zPos){
+  const g = new THREE.Group();
+  const deskW = 11, deskD = 1.8, deskH = 0.12, legH = 2.5;
+  const aisleGap = 2.5; // center aisle
+
+  [-1, 1].forEach(side => {
+    const xOff = side * (aisleGap/2 + deskW/2);
+    // Desk top
+    const top = new THREE.Mesh(new THREE.BoxGeometry(deskW, deskH, deskD), deskTopMat);
+    top.position.set(xOff, legH + deskH/2, 0); top.castShadow=true; top.receiveShadow=true; g.add(top);
+    // Front panel (modesty panel)
+    const panel = new THREE.Mesh(new THREE.BoxGeometry(deskW, legH*0.6, 0.1), deskSideMat);
+    panel.position.set(xOff, legH*0.35, -deskD/2); g.add(panel);
+    // Legs (4 per desk half)
+    for(let lx=-1; lx<=1; lx+=2){
+      for(let lz=-1; lz<=1; lz+=2){
+        const leg = new THREE.Mesh(new THREE.BoxGeometry(0.12, legH, 0.12), deskLegMat);
+        leg.position.set(xOff + lx*(deskW/2-0.2), legH/2, lz*(deskD/2-0.15)); g.add(leg);
+      }
+    }
+    // Attached bench/seat (slightly behind desk)
+    const benchTop = new THREE.Mesh(new THREE.BoxGeometry(deskW, 0.1, 0.9), seatMat);
+    benchTop.position.set(xOff, 1.5, deskD/2+0.6); g.add(benchTop);
+    // Bench legs
+    for(let lx=-1; lx<=1; lx+=2){
+      const bLeg = new THREE.Mesh(new THREE.BoxGeometry(0.1, 1.5, 0.1), deskLegMat);
+      bLeg.position.set(xOff + lx*(deskW/2-0.3), 0.75, deskD/2+0.6); g.add(bLeg);
+    }
+  });
+  g.position.set(0, 0.15, zPos);
+  return g;
+}
+// 5 rows of desks from near the board to the back of the room
+const deskRows = [];
+const deskZPositions = [-6, -2, 2, 6, 10];
+deskZPositions.forEach(z => {
+  const row = buildDeskRow(z);
+  classroomGroup.add(row);
+  deskRows.push(row);
+});
+
+// ── DUSTBIN (always upright, with 3R recycle symbol) ──
+const binGroup = new THREE.Group();
+binGroup.position.set(10, 0, -8);
+const binMat = new THREE.MeshStandardMaterial({color: 0x2a5a3a, metalness: 0.4, roughness: 0.3, side: THREE.DoubleSide});
+const binMesh = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.0, 3, 16, 1, true), binMat);
+binMesh.position.set(0, 1.5, 0); binGroup.add(binMesh);
+const binBase = new THREE.Mesh(new THREE.CylinderGeometry(1.0, 1.0, 0.1, 16), binMat);
+binBase.position.set(0, 0.05, 0); binGroup.add(binBase);
+// Rim at top of bin
+const rimMat = new THREE.MeshStandardMaterial({color: 0x1a3a2a, metalness: 0.6, roughness: 0.2});
+const rim = new THREE.Mesh(new THREE.TorusGeometry(1.2, 0.08, 8, 24), rimMat);
+rim.rotation.x = Math.PI/2; rim.position.set(0, 3, 0); binGroup.add(rim);
+
+// 3R Recycle symbol painted via canvas texture on bin surface
+const recycleCanvas = document.createElement('canvas');
+recycleCanvas.width = 256; recycleCanvas.height = 256;
+const rCtx = recycleCanvas.getContext('2d');
+rCtx.clearRect(0, 0, 256, 256);
+const cx = 128, cy = 128, r = 80;
+rCtx.lineWidth = 10; rCtx.lineCap = 'round';
+rCtx.strokeStyle = '#40cc60';
+// Draw three curved arrows
+for(let i = 0; i < 3; i++){
+  const startA = (i * Math.PI * 2 / 3) - Math.PI/2;
+  const endA = startA + Math.PI * 0.55;
+  rCtx.beginPath();
+  rCtx.arc(cx, cy, r, startA, endA);
+  rCtx.stroke();
+  // Arrowhead
+  const ax = cx + Math.cos(endA) * r;
+  const ay = cy + Math.sin(endA) * r;
+  const aDir = endA + Math.PI/2;
+  rCtx.fillStyle = '#40cc60';
+  rCtx.beginPath();
+  rCtx.moveTo(ax + Math.cos(aDir)*16, ay + Math.sin(aDir)*16);
+  rCtx.lineTo(ax + Math.cos(endA)*18, ay + Math.sin(endA)*18);
+  rCtx.lineTo(ax - Math.cos(aDir)*16, ay - Math.sin(aDir)*16);
+  rCtx.closePath();
+  rCtx.fill();
+}
+// Draw "3R" text in center
+rCtx.fillStyle = '#40cc60';
+rCtx.font = 'bold 52px sans-serif';
+rCtx.textAlign = 'center';
+rCtx.textBaseline = 'middle';
+rCtx.fillText('3R', cx, cy);
+
+const recycleTex = new THREE.CanvasTexture(recycleCanvas);
+recycleTex.needsUpdate = true;
+const recyclePlaneMat = new THREE.MeshStandardMaterial({
+  map: recycleTex, transparent: true, alphaTest: 0.1,
+  roughness: 0.6, metalness: 0.0, side: THREE.DoubleSide,
+  depthWrite: false,
+  polygonOffset: true, polygonOffsetFactor: -2, polygonOffsetUnits: -2
+});
+// Curved decal matching bin cylinder curvature (wraps around -x face)
+// Bin is CylinderGeometry(1.2, 1.0, 3) — use slightly larger radii to sit on surface
+// thetaStart = PI*1.3, thetaLength = PI*0.4 centers the arc at 3PI/2 (-x direction)
+const decalGeo = new THREE.CylinderGeometry(1.22, 1.02, 1.8, 16, 1, true, Math.PI * 1.3, Math.PI * 0.4);
+const recyclePlane = new THREE.Mesh(decalGeo, recyclePlaneMat);
+recyclePlane.position.set(0, 1.5, 0); // same center as bin mesh
+binGroup.add(recyclePlane);
+
+// Bin is always upright - no rotation
+binGroup.position.y = 0.15;
+classroomGroup.add(binGroup);
+
+// ── PULLEY SYSTEM (gear + two strings from ceiling) ──
+const pulleyGroup = new THREE.Group();
+pulleyGroup.position.set(10, 0, -8); // same x,z as bin
+// Gear at ceiling
+const gearMat = new THREE.MeshStandardMaterial({color: 0x555555, metalness: 0.9, roughness: 0.1});
+const gearCore = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.2, 24), gearMat);
+gearCore.rotation.x = Math.PI/2; gearCore.position.set(0, RH-0.5, 0); pulleyGroup.add(gearCore);
+// Gear teeth
+for(let i=0; i<12; i++){
+  const tooth = new THREE.Mesh(new THREE.BoxGeometry(0.12, 0.15, 0.22), gearMat);
+  const a = (i/12)*Math.PI*2;
+  tooth.position.set(Math.cos(a)*0.58, RH-0.5, Math.sin(a)*0.58);
+  tooth.rotation.y = a;
+  pulleyGroup.add(tooth);
+}
+// Gear axle
+const axle = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.06, 0.5, 8), gearMat);
+axle.rotation.x = Math.PI/2; axle.position.set(0, RH-0.5, 0); pulleyGroup.add(axle);
+
+// Two strings (thin cylinders, initially hidden above ceiling)
+const stringMat = new THREE.MeshStandardMaterial({color: 0x8b7355, roughness: 0.8});
+const stringL = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 6), stringMat);
+stringL.position.set(-0.6, RH, 0); // starts at ceiling, length will be scaled
+stringL.geometry.translate(0, -0.5, 0); // pivot from top
+pulleyGroup.add(stringL);
+const stringR = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1, 6), stringMat);
+stringR.position.set(0.6, RH, 0);
+stringR.geometry.translate(0, -0.5, 0);
+pulleyGroup.add(stringR);
+
+// String hooks (small rings at bottom of strings)
+const hookMat = new THREE.MeshStandardMaterial({color: 0x666666, metalness: 0.8, roughness: 0.2});
+const hookL = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.02, 6, 12), hookMat);
+hookL.rotation.x = Math.PI/2; pulleyGroup.add(hookL);
+const hookR = new THREE.Mesh(new THREE.TorusGeometry(0.08, 0.02, 6, 12), hookMat);
+hookR.rotation.x = Math.PI/2; pulleyGroup.add(hookR);
+
+// Initially hide pulley strings (scale Y to 0)
+stringL.scale.y = 0; stringR.scale.y = 0;
+hookL.visible = false; hookR.visible = false;
+classroomGroup.add(pulleyGroup);
+
+// Trash pieces (scattered on floor near the dustbin)
+const trashMat = new THREE.MeshStandardMaterial({color: 0xdddddd, roughness: 0.9});
+const trashPieces = [];
+for(let i=0; i<15; i++){
+  const t = new THREE.Mesh(new THREE.IcosahedronGeometry(0.3 + Math.random()*0.2, 1), trashMat);
+  const pos = t.geometry.attributes.position;
+  for(let j=0; j<pos.count; j++) pos.setXYZ(j, pos.getX(j)*(0.8+Math.random()*0.4), pos.getY(j)*(0.8+Math.random()*0.4), pos.getZ(j)*(0.8+Math.random()*0.4));
+  t.geometry.computeVertexNormals();
+  const startX = 10 - 2 - Math.random()*4;
+  const startZ = -8 + (Math.random()-0.5)*3;
+  t.position.set(startX, 0.3, startZ);
+  t.userData = {
+    startPos: new THREE.Vector3(startX, 0.3, startZ),
+    // Target: inside the bin opening (x=10, y=2.5-3.5 arc into bin, z=-8)
+    targetPos: new THREE.Vector3(10 + (Math.random()-0.5)*0.5, 2.8 + Math.random()*0.5, -8 + (Math.random()-0.5)*0.5),
+    delay: Math.random() * 0.4
+  };
+  classroomGroup.add(t);
+  trashPieces.push(t);
+}
+
+// ── CLASSROOM LIGHTING ──
+// Main overhead warm lights
+const classLight1 = new THREE.PointLight(0xfff0d0, 0.5, 40);
+classLight1.position.set(0, RH-1, -5); classroomGroup.add(classLight1);
+const classLight2 = new THREE.PointLight(0xfff0d0, 0.4, 40);
+classLight2.position.set(0, RH-1, 5); classroomGroup.add(classLight2);
+const classLight3 = new THREE.PointLight(0xfff0d0, 0.3, 30);
+classLight3.position.set(-8, RH-1, 0); classroomGroup.add(classLight3);
+const classLight4 = new THREE.PointLight(0xfff0d0, 0.3, 30);
+classLight4.position.set(8, RH-1, 0); classroomGroup.add(classLight4);
+
+scene.add(classroomGroup);
+classroomGroup.visible = false; // hidden until camera approaches
+
+window.classroomBin = binGroup;
+window.classroomTrash = trashPieces;
+window.classroomPulley = { group: pulleyGroup, stringL, stringR, hookL, hookR, gearCore, RH };
+
 // ── TREES (realistic, mixed types) ──
 function makeTree(h,leafR){
   const g=new THREE.Group();
@@ -449,22 +758,25 @@ let isIntersecting = false;
 const campusEl = document.getElementById('campus-scene');
 
 // ── ANIMATE ──
+// Board world position: classroomGroup(0,0,-25) + local(0, 6, -13.4) = (0, 6, -38.4)
+const boardLookAt = new THREE.Vector3(0, 6, -38.4);
+// Camera positions for classroom traversal (world coords)
+const classBackPos = new THREE.Vector3(0, 5, -12);   // back of room (behind all desks)
+const classFrontPos = new THREE.Vector3(0, 5, -18); // same ~20 unit distance to board as original view
+
 let t=0;
 function animate(){
   requestAnimationFrame(animate);
   t+=0.008;
+  const scrollY = window.scrollY || 0;
+  const wh = window.innerHeight;
+  const globeEnd = wh * 4;
+  const hoverEnd = wh * 5;
+  const classroomEnter = wh * 6;  // camera arrives at back of classroom
+  const zoomEnd = wh * 8;          // camera past all benches, only board visible
+  const wbStart = wh * 8;
+  const maxScroll = Math.max(1, (document.body.scrollHeight || document.body.offsetHeight) - wh);
   
-  // Trigger animation only when the scene has almost completely taken over the screen (95% visible)
-  if (!isIntersecting && campusEl.getBoundingClientRect().top < window.innerHeight * 0.05) {
-    isIntersecting = true;
-  }
-  
-  if (isIntersecting && introProgress < 1) {
-    introProgress += 0.012; // ~1.5 seconds at 60fps
-    if (introProgress > 1) introProgress = 1;
-  }
-  
-  // Fountain Physics Update
   if (window.fountainParticles) {
     const pts = window.fountainParticles;
     const pos = pts.geometry.attributes.position.array;
@@ -473,15 +785,13 @@ function animate(){
       pos[i*3] += vel[i].vx * 0.016;
       pos[i*3+1] += vel[i].vy * 0.016;
       pos[i*3+2] += vel[i].vz * 0.016;
-      vel[i].vy -= 0.035; // Gravity pull
-      
-      // Splash down into the water basin
+      vel[i].vy -= 0.035; 
       if(pos[i*3+1] < 0) {
         pos[i*3] = (Math.random() - 0.5) * 0.1;
         pos[i*3+1] = 0;
         pos[i*3+2] = (Math.random() - 0.5) * 0.1;
         const a = Math.random() * Math.PI * 2;
-        const r = Math.random() * 0.45; // Wider spray
+        const r = Math.random() * 0.45;
         vel[i].vx = Math.cos(a) * r;
         vel[i].vy = 1.0 + Math.random() * 1.5;
         vel[i].vz = Math.sin(a) * r;
@@ -489,24 +799,157 @@ function animate(){
     }
     pts.geometry.attributes.position.needsUpdate = true;
   }
-  
   wMat.uniforms.uTime.value=t;
+  let targetX = Math.sin(t*0.12)*0.4;
+  let targetY = 3.5+Math.sin(t*0.08)*0.15;
+  let targetZ = 18;
   
-  // Base hover position
-  const targetX = Math.sin(t*0.12)*0.4;
-  const targetY = 3.5+Math.sin(t*0.08)*0.15;
-  const targetZ = 18;
+  if (scrollY < globeEnd) {
+     // Globe phase — camera far above
+     cam.position.set(0, 40, 5);
+     cam.lookAt(0, 3, 0);
+     classroomGroup.visible = false;
+  } else if (scrollY < hoverEnd) {
+    // Descend to campus level
+    let ease = (scrollY - globeEnd) / (hoverEnd - globeEnd);
+    ease = 1 - Math.pow(1 - ease, 4);
+    cam.position.x = targetX;
+    cam.position.y = 40 - (40 - targetY) * ease;
+    cam.position.z = 5 + (targetZ - 5) * ease;
+    cam.lookAt(0, 3 - (1-ease)*5, 0);
+    classroomGroup.visible = false;
+  } else if (scrollY < classroomEnter) {
+    // Zoom from campus into back of classroom
+    let p = (scrollY - hoverEnd) / (classroomEnter - hoverEnd);
+    // Only show classroom once camera is past the campus buildings
+    classroomGroup.visible = p > 0.5;
+    p = p * p * (3 - 2 * p); // smoothstep
+    cam.position.x = targetX * (1-p) + classBackPos.x * p;
+    cam.position.y = targetY * (1-p) + classBackPos.y * p;
+    cam.position.z = targetZ * (1-p) + classBackPos.z * p;
+    // Smoothly transition lookAt from campus (0,3,0) to the board
+    const lx = 0, ly = 3*(1-p) + boardLookAt.y*p, lz = 0*(1-p) + boardLookAt.z*p;
+    cam.lookAt(lx, ly, lz);
+  } else if (scrollY < zoomEnd) {
+    // Move through classroom benches toward the board
+    let p = (scrollY - classroomEnter) / (zoomEnd - classroomEnter);
+    p = p * p * (3 - 2 * p); // smoothstep
+    cam.position.x = classBackPos.x * (1-p) + classFrontPos.x * p;
+    cam.position.y = classBackPos.y * (1-p) + classFrontPos.y * p;
+    cam.position.z = classBackPos.z * (1-p) + classFrontPos.z * p;
+    cam.lookAt(boardLookAt.x, boardLookAt.y, boardLookAt.z);
+  } else {
+    // Locked in front of board — only board visible
+    cam.position.set(classFrontPos.x, classFrontPos.y, classFrontPos.z);
+    cam.lookAt(boardLookAt.x, boardLookAt.y, boardLookAt.z);
+    
+    let trashP = (scrollY - wbStart) / Math.max(1, (maxScroll - wbStart));
+    trashP = Math.min(1, Math.max(0, trashP));
+    
+    // Phase 1 (0–50%): Trash balls arc into the upright bin
+    if (window.classroomTrash) {
+      window.classroomTrash.forEach(tr => {
+        let p = (trashP * 2 - tr.userData.delay) / (1 - tr.userData.delay); // complete by 50%
+        p = Math.min(1, Math.max(0, p));
+        p = 1 - Math.pow(1-p, 3); // ease out
+        const arcH = Math.sin(p * Math.PI) * 5; // high arc into bin
+        tr.position.x = tr.userData.startPos.x * (1-p) + tr.userData.targetPos.x * p;
+        tr.position.y = tr.userData.startPos.y * (1-p) + tr.userData.targetPos.y * p + arcH;
+        tr.position.z = tr.userData.startPos.z * (1-p) + tr.userData.targetPos.z * p;
+        // Hide trash once it reaches inside the bin
+        tr.visible = (p < 0.95);
+        // Spin the trash ball as it flies
+        tr.rotation.x = p * Math.PI * 3;
+        tr.rotation.z = p * Math.PI * 2;
+      });
+    }
+    
+    // Phase 2 (55–75%): Pulley strings descend from ceiling gear
+    // Phase 3 (75–100%): Strings attach to bin and lift it up
+    if (window.classroomPulley && window.classroomBin) {
+      const pul = window.classroomPulley;
+      const bin = window.classroomBin;
+      
+      // Gear spins when pulley is active (55%+)
+      if (trashP > 0.55) {
+        pul.gearCore.rotation.z = (trashP - 0.55) * Math.PI * 8;
+      }
+      
+      // Strings descend (55% to 75%)
+      let stringP = (trashP - 0.55) / 0.2;
+      stringP = Math.min(1, Math.max(0, stringP));
+      stringP = stringP * stringP * (3 - 2 * stringP); // smoothstep
+      
+      const binTopY = 3.15; // top of bin in local space
+      const stringLen = (pul.RH - binTopY) * stringP;
+      
+      pul.stringL.scale.y = stringLen;
+      pul.stringR.scale.y = stringLen;
+      pul.hookL.visible = stringP > 0.1;
+      pul.hookR.visible = stringP > 0.1;
+      // Position hooks at bottom of strings
+      const hookY = pul.RH - stringLen;
+      pul.hookL.position.set(-0.6, hookY, 0);
+      pul.hookR.position.set(0.6, hookY, 0);
+      
+      // Lift bin up (75% to 100%)
+      let liftP = (trashP - 0.75) / 0.25;
+      liftP = Math.min(1, Math.max(0, liftP));
+      liftP = liftP * liftP; // ease in (accelerating lift)
+      
+      const liftHeight = liftP * (pul.RH + 5); // lift above ceiling
+      bin.position.y = 0.15 + liftHeight;
+      
+      // Strings shorten as bin rises (retract)
+      if (liftP > 0) {
+        const remainLen = Math.max(0, (pul.RH - binTopY) - liftHeight);
+        pul.stringL.scale.y = remainLen;
+        pul.stringR.scale.y = remainLen;
+        pul.hookL.position.set(-0.6, bin.position.y + binTopY, 0);
+        pul.hookR.position.set(0.6, bin.position.y + binTopY, 0);
+      }
+    }
+  }
   
-  // Easing function (easeOutQuart for a smooth, heavy landing)
-  const ease = 1 - Math.pow(1 - introProgress, 4);
+  const wbDOM = document.getElementById('whiteboard-layer');
+  const wbContent = document.getElementById('whiteboard-scroll-content');
+  if(wbDOM && wbContent){
+     if(scrollY >= zoomEnd){
+        // Project 3D whiteboard corners to screen pixels for precise overlay alignment
+        cam.updateMatrixWorld();
+        const cw = cvs.clientWidth;
+        const ch = cvs.clientHeight;
+        
+        const tlProj = wbCornerTL.clone().project(cam);
+        const brProj = wbCornerBR.clone().project(cam);
+        
+        const sLeft = (tlProj.x * 0.5 + 0.5) * cw;
+        const sTop = (-tlProj.y * 0.5 + 0.5) * ch;
+        const sRight = (brProj.x * 0.5 + 0.5) * cw;
+        const sBottom = (-brProj.y * 0.5 + 0.5) * ch;
+        
+        wbDOM.style.left = sLeft + 'px';
+        wbDOM.style.top = sTop + 'px';
+        wbDOM.style.width = (sRight - sLeft) + 'px';
+        wbDOM.style.height = (sBottom - sTop) + 'px';
+        
+        // Fade in the whiteboard text overlay
+        let fadeP = Math.min(1, (scrollY - zoomEnd) / (wh * 0.3));
+        wbDOM.style.opacity = fadeP;
+        wbDOM.style.pointerEvents = fadeP > 0.5 ? 'auto' : 'none';
+        let scrollP = (scrollY - zoomEnd - wh*0.3) / Math.max(1, (maxScroll - zoomEnd - wh*0.3));
+        scrollP = Math.min(1, Math.max(0, scrollP));
+        const dist = Math.max(0, wbContent.offsetHeight - wbDOM.offsetHeight);
+        wbContent.style.transform = `translateY(${-dist * scrollP}px)`;
+     } else {
+        wbDOM.style.opacity = 0;
+        wbDOM.style.pointerEvents = 'none';
+        wbContent.style.transform = `translateY(0px)`;
+     }
+  }
   
-  // Camera dives down from high above the campus (Y=40, Z=5)
-  cam.position.x = targetX;
-  cam.position.y = 40 - (40 - targetY) * ease;
-  cam.position.z = 5 + (targetZ - 5) * ease;
-  
-  // Look down initially, then tilt up to face the building
-  cam.lookAt(0, 3 - (1-ease)*5, 0);
+  const cOverlay = document.getElementById('campus-overlay');
+  if (cOverlay) cOverlay.style.opacity = (scrollY >= globeEnd && scrollY < hoverEnd) ? 1 : 0;
   
   R.render(scene,cam);
 }
